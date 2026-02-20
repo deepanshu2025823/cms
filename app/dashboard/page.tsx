@@ -6,7 +6,10 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { 
   Loader2, Mail, Phone, MessageSquare, CheckCircle2, 
-  XCircle, Search, Bot, Filter, Zap, Users, Activity as ActivityIcon 
+  XCircle, Search, Bot, Filter, Zap, Users, Activity as ActivityIcon, 
+  ShieldCheck,
+  AlertTriangle,
+  Ban
 } from 'lucide-react';
 
 interface Attendee {
@@ -22,6 +25,7 @@ interface Attendee {
   whatsappSent: number;
   voiceCallCount: number;
   isRegistered: boolean;
+  cheatWarnings: number;
 }
 
 export default function Dashboard360() {
@@ -160,17 +164,35 @@ export default function Dashboard360() {
                       </div>
                     </td>
                     <td className="p-5">
-                      <div className="space-y-2">
-                        <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase border ${
-                          lead.status === 'PASSED' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'
-                        }`}>
-                          {lead.status}
-                        </span>
-                        <p className="text-xs font-bold text-white tracking-tight">
-                          Score: <span className="text-blue-400">{lead.score}%</span> — {lead.discountPercent}% Off
-                        </p>
-                      </div>
-                    </td>
+  <div className="space-y-2">
+    <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase border ${
+      lead.status === 'PASSED' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 
+      lead.status === 'disqualified' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+      'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+    }`}>
+      {lead.status}
+    </span>
+    <p className="text-xs font-bold text-white tracking-tight">
+      Score: <span className="text-blue-400">{lead.score}%</span> — {lead.discountPercent}% Off
+    </p>
+    
+    <div className="flex items-center gap-1.5 mt-2">
+      {lead.cheatWarnings === 0 ? (
+        <span className="text-[10px] font-bold text-green-500 flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded-sm w-fit">
+          <ShieldCheck size={12}/> Clean Test
+        </span>
+      ) : lead.cheatWarnings === 1 ? (
+        <span className="text-[10px] font-bold text-yellow-500 flex items-center gap-1 bg-yellow-500/10 px-2 py-0.5 rounded-sm w-fit">
+          <AlertTriangle size={12}/> 1 Warning
+        </span>
+      ) : (
+        <span className="text-[10px] font-bold text-red-500 flex items-center gap-1 bg-red-500/10 px-2 py-0.5 rounded-sm w-fit animate-pulse">
+          <Ban size={12}/> Disqualified
+        </span>
+      )}
+    </div>
+  </div>
+</td>
                     <td className="p-5 bg-blue-900/[0.03] border-x border-white/5">
                       <div className="flex justify-center items-center gap-4">
                         <div className="flex flex-col items-center gap-1" title="Emails Sent">

@@ -1,0 +1,63 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String @id @default(uuid())
+  name     String
+  email    String @unique
+  password String
+  roleId   String
+  role     Role   @relation(fields: [roleId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  title     String
+  desc      String
+  type      String   @default("info") 
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  permissions String   @default("view_report") 
+  users       User[]
+}
+
+model Attendee {
+  id              String   @id @default(uuid())
+  fullName        String
+  email           String   @unique
+  phone           String
+  countryCode     String
+  score           Int
+  discountPercent Int
+  couponCode      String   @unique
+  planName        String
+  status          TestStatus @default(PASSED)
+  
+  emailSent       Int      @default(1) 
+  whatsappSent    Int      @default(0) 
+  voiceCallCount  Int      @default(0) 
+  isRegistered    Boolean  @default(false) 
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+enum TestStatus {
+  PASSED
+  FAILED
+  DISQUALIFIED
+}

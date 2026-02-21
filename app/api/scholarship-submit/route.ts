@@ -8,7 +8,7 @@ export async function OPTIONS() {
   return new NextResponse(null, {
     status: 204,
     headers: {
-      'Access-Control-Allow-Origin': 'https://www.careerlabconsulting.com',
+      'Access-Control-Allow-Origin': '*', 
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     },
@@ -95,7 +95,7 @@ export async function POST(req: Request) {
 
         return NextResponse.json(
           { success: true, message: 'Disqualification processed and saved to DB' },
-          { headers: { 'Access-Control-Allow-Origin': 'https://www.careerlabconsulting.com' } }
+          { headers: { 'Access-Control-Allow-Origin': '*' } } 
         );
     }
 
@@ -113,40 +113,31 @@ export async function POST(req: Request) {
       subject: `🎉 InternX-AI Scholarship Unlocked: Save ${formatCurrency(scholarshipAmount)} on ${planName}`,
       html: `
         <div style="font-family: 'Segoe UI', Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
-          
           <div style="background-color: #2563eb; padding: 35px 20px; text-align: center;">
             <h1 style="color: #ffffff; margin: 0; font-size: 26px;">Congratulations!</h1>
             <p style="color: #bfdbfe; margin: 10px 0 0 0; font-size: 16px;">Scholarship Qualified Successfully</p>
           </div>
-
           <div style="padding: 35px 30px;">
-            
             <p style="font-size: 16px; margin-top: 0;">Hi <strong>${name}</strong>,</p>
             <p style="color: #475569; line-height: 1.6;">Thanks again for participating in our recent scholarship test. You did a great job, and I’m happy to share that you’ve officially qualified for a scholarship!</p>
-
             <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 25px; margin: 25px 0; text-align: center;">
               <h3 style="color: #1e293b; margin-top: 0; margin-bottom: 20px; font-size: 18px; text-transform: uppercase; letter-spacing: 1px;">Your Results</h3>
-              
               <div style="margin-bottom: 15px;">
                 <span style="font-size: 14px; color: #64748b; text-transform: uppercase; font-weight: bold;">Score</span><br/>
                 <span style="font-size: 28px; font-weight: 800; color: #0f172a;">${score} <span style="font-size: 16px; color: #94a3b8; font-weight: normal;">/ ${totalQuestions * 2}</span></span>
               </div>
-
               <div style="margin-bottom: 15px;">
                 <span style="font-size: 14px; color: #64748b; text-transform: uppercase; font-weight: bold;">Scholarship Code</span><br/>
                 <div style="background: #eff6ff; border: 2px dashed #2563eb; color: #2563eb; font-size: 22px; font-weight: bold; padding: 10px 20px; border-radius: 8px; display: inline-block; margin-top: 5px; font-family: monospace;">
                   ${scholarshipCode}
                 </div>
               </div>
-
               <div>
                 <span style="font-size: 14px; color: #64748b; text-transform: uppercase; font-weight: bold;">Scholarship Unlocked</span><br/>
                 <span style="font-size: 18px; font-weight: bold; color: #16a34a;">${discount}% OFF (${formatCurrency(scholarshipAmount)})</span>
               </div>
             </div>
-
             <h3 style="color: #1e293b; margin-top: 30px; border-bottom: 2px solid #2563eb; display: inline-block; padding-bottom: 5px;">Updated Fee Structure</h3>
-            
             <div style="margin-top: 15px;">
               <table style="width: 100%; border-collapse: collapse;">
                 <tr>
@@ -166,23 +157,18 @@ export async function POST(req: Request) {
                 </tr>
               </table>
             </div>
-
             <p style="margin-top: 30px; color: #475569;">To claim this, just use your code within <strong>48 Hours</strong>. If you have any questions at all, feel free to reach out.</p>
             <p style="color: #475569;">Great work!</p>
-
             <div style="margin-top: 35px; text-align: center;">
               <a href="https://internx.ai/checkout/b2c?scholarshipCode=${scholarshipCode}&planName=${planName}" style="background-color: #2563eb; color: #ffffff; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);">
                 Claim Scholarship Now
               </a>
             </div>
-
             <div style="margin-top: 30px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
               <p style="margin: 0; color: #64748b; font-style: italic; font-size: 14px;">Best Regards,</p>
               <p style="margin: 5px 0 0 0; font-weight: bold; color: #0f172a;">Career Lab Consulting</p>
             </div>
-
           </div>
-          
           <div style="background-color: #f1f5f9; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0;">
             &copy; 2026 InternX AI by Career Lab Consulting. All rights reserved.<br/>
             This offer is valid for a limited time.
@@ -211,13 +197,13 @@ export async function POST(req: Request) {
 
     return NextResponse.json(
       { success: true, message: 'Data saved to DB and emails sent' },
-      { headers: { 'Access-Control-Allow-Origin': 'https://www.careerlabconsulting.com' } }
+      { headers: { 'Access-Control-Allow-Origin': '*' } }
     );
   } catch (error) {
     console.error('Email/DB Saving Error:', error);
     return NextResponse.json(
       { error: 'Failed to process request' }, 
-      { status: 500, headers: { 'Access-Control-Allow-Origin': 'https://www.careerlabconsulting.com' } }
+      { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } }
     );
   }
 }

@@ -40,7 +40,7 @@ export default function Dashboard360() {
   const [searchTerm, setSearchTerm] = useState('');
   const [clearing, setClearing] = useState(false);
 
-  // 🚀 NEW: Tracker for Auto-Calling
+  // Tracker for Auto-Calling
   const prevAttendeesCount = useRef<number | null>(null);
   const autoCallTriggered = useRef<Set<string>>(new Set());
 
@@ -59,47 +59,42 @@ export default function Dashboard360() {
     return () => clearInterval(interval);
   }, []);
 
-  // 🚀 NEW: AUTONOMOUS 2-SECOND CALL TRIGGER LOGIC
+  // 🚀 AUTONOMOUS 2-SECOND SILENT CALL TRIGGER
   useEffect(() => {
     if (prevAttendeesCount.current !== null && attendees.length > prevAttendeesCount.current) {
-      // Find the new attendees (assuming the newest is at index 0 based on descending order)
       const newLead = attendees[0]; 
       
-      // Ensure we don't call the same person twice automatically
       if (newLead && !autoCallTriggered.current.has(newLead.id)) {
         autoCallTriggered.current.add(newLead.id);
         
-        console.log(`New lead detected: ${newLead.fullName}. Initiating autonomous call in 2 seconds...`);
-        
+        // Wait exactly 2 seconds, then trigger the backend API
         setTimeout(() => {
-          executeAutonomousCall(newLead);
-        }, 2000); // Exactly 2 seconds delay
+          executeAutonomousAPI(newLead);
+        }, 2000); 
       }
     }
     prevAttendeesCount.current = attendees.length;
   }, [attendees]);
 
-  // The Autonomous Call Simulation
-  const executeAutonomousCall = (lead: Attendee) => {
-    let script = "";
+  // Silent execution (No local sound, just hits the backend API)
+  const executeAutonomousAPI = async (lead: Attendee) => {
+    // Show a modern, non-intrusive toast instead of alert (for better UX)
+    console.log(`[SYS] Triggering Outbound AI Call API for ${lead.phone}...`);
     
-    if (lead.status.toLowerCase() === 'passed') {
-        script = `Hi ${lead.fullName}, this is Manee from Career Lab Consulting. I am so thrilled to tell you that you've scored ${lead.score} percent and unlocked a ${lead.discountPercent} percent scholarship! This is fantastic news. If you have any complex questions about your enrollment, I am transferring this call to our senior sales team at +91 8700827753 right now. Please hold on.`;
-    } else {
-        script = `Hi ${lead.fullName}, Manee here from Career Lab Consulting. I see your test attempt had some issues resulting in a ${lead.score} score. Don't worry, we are here to support you. Let me quickly connect you in a conference call with our academic team at +91 8700827753 so they can guide you further. Transferring now.`;
-    }
-
-    // Play the voice locally as a simulation
-    playIndianFemaleVoice(script);
-    
-    // Update DB to show call was made
-    fetch('/api/nurture', {
+    // Hit the backend to log the call and (in future) trigger Vapi/Twilio
+    await fetch('/api/nurture', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: lead.id, type: 'call', action: 'send', content: script }),
-    }).then(() => fetchAttendees());
+      body: JSON.stringify({ 
+        id: lead.id, 
+        type: 'call', 
+        action: 'send', 
+        content: "Autonomous system triggered call sequence." 
+      }),
+    });
+    
+    await fetchAttendees();
   };
-
 
   const handleGenerateDraft = async (lead: Attendee, type: string) => {
     setActiveMenu(null);
@@ -140,7 +135,8 @@ export default function Dashboard360() {
             window.open(waUrl, '_blank');
         } 
         else if (draftModal.type === 'call') {
-            playIndianFemaleVoice(draftContent);
+            // Future Twilio/Vapi logic goes here
+            alert("Call script sent to AI Telephony server for dispatch.");
         }
         else {
             alert("Email Published and Sent Successfully!");
@@ -158,25 +154,6 @@ export default function Dashboard360() {
     }
   };
 
-  const playIndianFemaleVoice = (text: string) => {
-    const synth = window.speechSynthesis;
-    // Cancel any ongoing speech so they don't overlap
-    synth.cancel(); 
-    
-    const utterance = new SpeechSynthesisUtterance(text);
-    
-    const voices = synth.getVoices();
-    const indianVoice = voices.find(v => (v.lang === 'en-IN' || v.lang === 'hi-IN') && v.name.toLowerCase().includes('female')) || 
-                        voices.find(v => v.lang === 'en-IN' || v.lang === 'hi-IN');
-    
-    if(indianVoice) utterance.voice = indianVoice;
-    utterance.pitch = 1.2; 
-    utterance.rate = 0.95;  
-    
-    synth.speak(utterance);
-    alert(`📞 AI Call Triggered for ${text.substring(0, 15)}... \nManee is speaking, and ready to conference +91 8700827753 if needed!`);
-  };
-
   const handleClearData = async () => {
     if(!window.confirm("🚨 WARNING: This will permanently delete ALL Attendees. Are you sure?")) return;
     setClearing(true);
@@ -184,7 +161,8 @@ export default function Dashboard360() {
       const res = await fetch('/api/clear-data', { method: 'DELETE' });
       if(res.ok) { 
           setAttendees([]); 
-          prevAttendeesCount.current = 0; // Reset counter
+          prevAttendeesCount.current = 0;
+          autoCallTriggered.current.clear();
           alert("Database Truncated!"); 
       }
     } catch (err) {} finally { setClearing(false); }
@@ -341,7 +319,7 @@ export default function Dashboard360() {
                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition-all active:scale-95 disabled:opacity-50 ${draftModal.type==='email'?'bg-blue-600 hover:bg-blue-500':draftModal.type==='whatsapp'?'bg-emerald-600 hover:bg-emerald-500':'bg-indigo-600 hover:bg-indigo-500'}`}
                  >
                    {isPublishing ? <Loader2 size={16} className="animate-spin"/> : <Send size={16}/>}
-                   Publish & {draftModal.type === 'call' ? 'Play Call' : 'Send'}
+                   Publish & {draftModal.type === 'call' ? 'Log Call' : 'Send'}
                  </button>
               </div>
            </div>

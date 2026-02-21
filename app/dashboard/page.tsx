@@ -7,7 +7,7 @@ import { useSession } from 'next-auth/react';
 import { 
   Loader2, Mail, Phone, MessageSquare, CheckCircle2, 
   Search, Bot, Filter, Zap, Users, Activity as ActivityIcon, 
-  ShieldCheck, AlertTriangle, Ban, X, Trash2
+  ShieldCheck, AlertTriangle, Ban, X, Trash2, Send
 } from 'lucide-react';
 
 interface Attendee {
@@ -30,24 +30,23 @@ export default function Dashboard360() {
   const { data: session } = useSession();
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [loading, setLoading] = useState(true);
-  const [nurturingId, setNurturingId] = useState<string | null>(null);
+  
   const [activeMenu, setActiveMenu] = useState<string | null>(null); 
+  const [isDrafting, setIsDrafting] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [draftModal, setDraftModal] = useState<{isOpen: boolean, type: string, lead: Attendee | null}>({isOpen: false, type: '', lead: null});
+  const [draftContent, setDraftContent] = useState('');
+
   const [searchTerm, setSearchTerm] = useState('');
   const [clearing, setClearing] = useState(false);
 
   const fetchAttendees = async () => {
     try {
-      const res = await fetch('/api/attendees', {
-        cache: 'no-store', 
-        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
-      });
+      const res = await fetch('/api/attendees', { cache: 'no-store' });
       const data = await res.json();
       setAttendees(data);
-    } catch (err) {
-      console.error("Failed to fetch leads");
-    } finally {
-      setLoading(false);
-    }
+    } catch (err) { console.error("Failed to fetch leads"); } 
+    finally { setLoading(false); }
   };
 
   useEffect(() => {
@@ -56,79 +55,108 @@ export default function Dashboard360() {
     return () => clearInterval(interval);
   }, []);
 
-  const triggerManee = async (id: string, type: 'email' | 'whatsapp' | 'call') => {
-    setNurturingId(id);
-    setActiveMenu(null); 
+  const handleGenerateDraft = async (lead: Attendee, type: string) => {
+    setActiveMenu(null);
+    setIsDrafting(true);
+    setDraftModal({ isOpen: true, type, lead });
+    setDraftContent("Generating AI script...");
+
     try {
       const res = await fetch('/api/nurture', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, type }),
+        body: JSON.stringify({ id: lead.id, type, action: 'generate' }),
       });
       const data = await res.json();
-
-      if (res.ok) {
-        await fetchAttendees(); 
-        alert(`Gemini AI successfully executed the ${type.toUpperCase()} autonomous action!\n\nAI Log: ${data.message}`);
-      } else {
-        alert(`Action failed: ${data.error}`);
-      }
+      if (res.ok) setDraftContent(data.draft);
+      else setDraftContent("Error generating draft.");
     } catch (err) {
-      console.error(err);
-      alert("System Error");
+      setDraftContent("Network Error.");
     } finally {
-      setNurturingId(null);
+      setIsDrafting(false);
     }
   };
 
-  const handleClearData = async () => {
-    if(!window.confirm("🚨 WARNING: This will permanently delete ALL Attendees and Test Data from the database. Are you sure?")) return;
+  const handlePublishDraft = async () => {
+    if(!draftModal.lead) return;
+    setIsPublishing(true);
+
+    try {
+      const res = await fetch('/api/nurture', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: draftModal.lead.id, type: draftModal.type, action: 'send', content: draftContent }),
+      });
+
+      if (res.ok) {
+        if(draftModal.type === 'whatsapp') {
+            const waUrl = `https://wa.me/${draftModal.lead.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(draftContent)}`;
+            window.open(waUrl, '_blank');
+        } 
+        else if (draftModal.type === 'call') {
+            playIndianFemaleVoice(draftContent);
+        }
+        else {
+            alert("Email Published and Sent Successfully!");
+        }
+        
+        await fetchAttendees(); 
+        setDraftModal({isOpen: false, type: '', lead: null});
+      } else {
+        alert("Failed to publish.");
+      }
+    } catch (err) {
+      alert("System Error");
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  const playIndianFemaleVoice = (text: string) => {
+    const synth = window.speechSynthesis;
+    const utterance = new SpeechSynthesisUtterance(text);
     
+    const voices = synth.getVoices();
+    const indianVoice = voices.find(v => (v.lang === 'en-IN' || v.lang === 'hi-IN') && v.name.toLowerCase().includes('female')) || 
+                        voices.find(v => v.lang === 'en-IN' || v.lang === 'hi-IN');
+    
+    if(indianVoice) utterance.voice = indianVoice;
+    utterance.pitch = 1.1; 
+    utterance.rate = 0.9;  
+    
+    synth.speak(utterance);
+    alert("Live AI Voice Call Simulation Started! (Make sure your volume is up)");
+  };
+
+  const handleClearData = async () => {
+    if(!window.confirm("🚨 WARNING: This will permanently delete ALL Attendees. Are you sure?")) return;
     setClearing(true);
     try {
       const res = await fetch('/api/clear-data', { method: 'DELETE' });
-      if(res.ok) {
-        setAttendees([]);
-        alert("Database Truncated Successfully!");
-      }
-    } catch (err) {
-      alert("Failed to clear data");
-    } finally {
-      setClearing(false);
-    }
+      if(res.ok) { setAttendees([]); alert("Database Truncated!"); }
+    } catch (err) {} finally { setClearing(false); }
   };
 
   const filteredAttendees = attendees.filter(a => 
     a.fullName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    a.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     a.phone.includes(searchTerm)
   );
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 pb-12 font-sans relative">
+      
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div className="bg-[#0f172a] p-5 sm:p-6 rounded-2xl border border-slate-800 flex items-center gap-4 shadow-lg">
-           <div className="p-3 bg-blue-500/10 rounded-xl shrink-0"><Users className="text-blue-500 w-6 h-6" /></div>
-           <div>
-             <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Total Attendees</p>
-             <h3 className="text-2xl font-black text-white">{attendees.length}</h3>
-           </div>
+        <div className="bg-[#0f172a] p-5 rounded-2xl border border-slate-800 flex items-center gap-4 shadow-lg">
+           <div className="p-3 bg-blue-500/10 rounded-xl"><Users className="text-blue-500 w-6 h-6" /></div>
+           <div><p className="text-[10px] uppercase font-bold text-slate-400">Total Attendees</p><h3 className="text-2xl font-black text-white">{attendees.length}</h3></div>
         </div>
-        <div className="bg-[#0f172a] p-5 sm:p-6 rounded-2xl border border-slate-800 flex items-center gap-4 shadow-lg">
-           <div className="p-3 bg-green-500/10 rounded-xl shrink-0"><CheckCircle2 className="text-green-500 w-6 h-6" /></div>
-           <div>
-             <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Registered</p>
-             <h3 className="text-2xl font-black text-white">{attendees.filter(a => a.isRegistered).length}</h3>
-           </div>
+        <div className="bg-[#0f172a] p-5 rounded-2xl border border-slate-800 flex items-center gap-4 shadow-lg">
+           <div className="p-3 bg-green-500/10 rounded-xl"><CheckCircle2 className="text-green-500 w-6 h-6" /></div>
+           <div><p className="text-[10px] uppercase font-bold text-slate-400">Registered</p><h3 className="text-2xl font-black text-white">{attendees.filter(a => a.isRegistered).length}</h3></div>
         </div>
-        <div className="bg-[#0f172a] p-5 sm:p-6 rounded-2xl border border-slate-800 flex items-center gap-4 shadow-lg sm:col-span-2 lg:col-span-1">
-           <div className="p-3 bg-purple-500/10 rounded-xl shrink-0"><Zap className="text-purple-500 w-6 h-6" /></div>
-           <div>
-             <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Manee Interventions</p>
-             <h3 className="text-2xl font-black text-white">
-               {attendees.reduce((acc, curr) => acc + curr.emailSent + curr.whatsappSent + curr.voiceCallCount, 0)}
-             </h3>
-           </div>
+        <div className="bg-[#0f172a] p-5 rounded-2xl border border-slate-800 flex items-center gap-4 shadow-lg">
+           <div className="p-3 bg-purple-500/10 rounded-xl"><Zap className="text-purple-500 w-6 h-6" /></div>
+           <div><p className="text-[10px] uppercase font-bold text-slate-400">Manee Interventions</p><h3 className="text-2xl font-black text-white">{attendees.reduce((a, c) => a + c.emailSent + c.whatsappSent + c.voiceCallCount, 0)}</h3></div>
         </div>
       </div>
 
@@ -136,43 +164,21 @@ export default function Dashboard360() {
         <div className="p-4 sm:p-5 border-b border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-900/50">
           <div className="relative w-full md:w-96">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-            <input 
-              type="text" 
-              placeholder="Search leads..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
-            />
+            <input type="text" placeholder="Search leads..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-10 pr-4 py-2.5 text-sm text-white focus:border-blue-500 outline-none" />
           </div>
-          
           <div className="flex w-full md:w-auto items-center gap-3">
-            <button className="flex-1 md:flex-none flex justify-center items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold transition-all border border-slate-700">
-              <Filter size={14}/> Filter
-            </button>
-            <button 
-              onClick={handleClearData}
-              disabled={clearing}
-              className="flex-1 md:flex-none flex justify-center items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-xs font-bold transition-all border border-red-500/20 disabled:opacity-50"
-            >
-              {clearing ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14}/>} 
-              Clear Data
-            </button>
+            <button className="flex-1 md:flex-none flex justify-center items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold border border-slate-700"><Filter size={14}/> Filter</button>
+            <button onClick={handleClearData} disabled={clearing} className="flex-1 md:flex-none flex justify-center items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-lg text-xs font-bold border border-red-500/20">{clearing ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14}/>} Clear Data</button>
           </div>
         </div>
 
         <div className="w-full relative">
           {loading ? (
-            <div className="h-64 flex flex-col items-center justify-center gap-4">
-              <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-              <p className="text-xs font-bold text-slate-400">Syncing Data...</p>
-            </div>
+            <div className="h-64 flex flex-col items-center justify-center gap-4"><Loader2 className="w-8 h-8 text-blue-500 animate-spin" /></div>
           ) : attendees.length === 0 ? (
-            <div className="h-64 flex flex-col items-center justify-center gap-3 text-slate-500">
-              <ActivityIcon size={32} className="opacity-30"/>
-              <p className="text-sm font-medium">Database is clean. Waiting for live data...</p>
-            </div>
+            <div className="h-64 flex flex-col items-center justify-center gap-3 text-slate-500"><ActivityIcon size={32} className="opacity-30"/><p>Database is clean. Waiting for data...</p></div>
           ) : (
-            <div className="overflow-x-auto w-full custom-scrollbar"> 
+            <div className="overflow-x-auto w-full custom-scrollbar pb-32"> 
               <table className="w-full text-left border-collapse min-w-[1000px]">
                 <thead>
                   <tr className="bg-slate-900 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800">
@@ -188,86 +194,50 @@ export default function Dashboard360() {
                     <tr key={lead.id} className="hover:bg-slate-800/20 transition-colors group">
                       <td className="px-6 py-4 align-middle">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-blue-400 font-bold text-sm shrink-0 border border-slate-700">
-                            {lead.fullName.charAt(0)}
-                          </div>
-                          <div className="flex flex-col max-w-[200px]">
-                            <p className="font-semibold text-white text-sm truncate">{lead.fullName}</p>
-                            <p className="text-[11px] text-slate-400 truncate">{lead.email}</p>
-                            <p className="text-[10px] text-blue-400 font-mono mt-0.5">{lead.phone}</p>
-                          </div>
+                          <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-blue-400 font-bold text-sm shrink-0 border border-slate-700">{lead.fullName.charAt(0)}</div>
+                          <div className="flex flex-col max-w-[200px]"><p className="font-semibold text-white text-sm truncate">{lead.fullName}</p><p className="text-[11px] text-slate-400 truncate">{lead.email}</p><p className="text-[10px] text-blue-400 font-mono mt-0.5">{lead.phone}</p></div>
                         </div>
                       </td>
-                      
                       <td className="px-6 py-4 align-middle">
                         <div className="flex flex-col gap-2">
                           <div className="flex items-center gap-2">
-                            <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase shrink-0 ${
-                              lead.status.toLowerCase() === 'passed' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 
-                              lead.status.toLowerCase() === 'disqualified' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' :
-                              'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                            }`}>
-                              {lead.status}
-                            </span>
-                            <span className="text-xs font-medium text-slate-300">
-                              {lead.score}% Score
-                            </span>
+                            <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase shrink-0 ${lead.status.toLowerCase() === 'passed' ? 'bg-emerald-500/10 text-emerald-400' : lead.status.toLowerCase() === 'disqualified' ? 'bg-rose-500/10 text-rose-400' : 'bg-amber-500/10 text-amber-400'}`}>{lead.status}</span>
+                            <span className="text-xs font-medium text-slate-300">{lead.score}% Score</span>
                           </div>
                           <div className="flex items-center">
-                            {lead.cheatWarnings === 0 ? (
-                              <span className="text-[10px] font-medium text-emerald-500 flex items-center gap-1">
-                                <ShieldCheck size={12}/> Clean
-                              </span>
-                            ) : lead.cheatWarnings === 1 ? (
-                              <span className="text-[10px] font-medium text-amber-500 flex items-center gap-1">
-                                <AlertTriangle size={12}/> 1 Warning
-                              </span>
-                            ) : (
-                              <span className="text-[10px] font-medium text-rose-500 flex items-center gap-1">
-                                <Ban size={12}/> Disqualified
-                              </span>
-                            )}
+                            {lead.cheatWarnings === 0 ? <span className="text-[10px] font-medium text-emerald-500 flex items-center gap-1"><ShieldCheck size={12}/> Clean</span> : lead.cheatWarnings === 1 ? <span className="text-[10px] font-medium text-amber-500 flex items-center gap-1"><AlertTriangle size={12}/> 1 Warning</span> : <span className="text-[10px] font-medium text-rose-500 flex items-center gap-1"><Ban size={12}/> Disqualified</span>}
                           </div>
                         </div>
                       </td>
-
                       <td className="px-6 py-4 align-middle bg-blue-500/[0.02]">
                         <div className="flex justify-center items-center gap-4">
-                          <div className="flex flex-col items-center gap-1">
-                            <Mail size={14} className="text-slate-500"/>
-                            <span className="text-[11px] font-black text-white">{lead.emailSent}</span>
-                          </div>
-                          <div className="flex flex-col items-center gap-1">
-                            <MessageSquare size={14} className="text-emerald-500"/>
-                            <span className="text-[11px] font-black text-emerald-400">{lead.whatsappSent}</span>
-                          </div>
-                          <div className="flex flex-col items-center gap-1">
-                            <Phone size={14} className="text-blue-500"/>
-                            <span className="text-[11px] font-black text-blue-400">{lead.voiceCallCount}</span>
-                          </div>
+                          <div className="flex flex-col items-center gap-1"><Mail size={14} className="text-slate-500"/><span className="text-[11px] font-black text-white">{lead.emailSent}</span></div>
+                          <div className="flex flex-col items-center gap-1"><MessageSquare size={14} className="text-emerald-500"/><span className="text-[11px] font-black text-emerald-400">{lead.whatsappSent}</span></div>
+                          <div className="flex flex-col items-center gap-1"><Phone size={14} className="text-blue-500"/><span className="text-[11px] font-black text-blue-400">{lead.voiceCallCount}</span></div>
                         </div>
                       </td>
-
                       <td className="px-6 py-4 align-middle text-center">
-                        {lead.isRegistered ? (
-                          <span className="inline-flex items-center gap-1.5 text-emerald-400 text-xs font-medium">
-                            <CheckCircle2 size={14}/> Done
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 text-slate-400 text-xs font-medium">
-                            <ActivityIcon size={14}/> Pending
-                          </span>
-                        )}
+                        {lead.isRegistered ? <span className="inline-flex items-center gap-1.5 text-emerald-400 text-xs font-medium"><CheckCircle2 size={14}/> Done</span> : <span className="inline-flex items-center gap-1.5 text-slate-400 text-xs font-medium"><ActivityIcon size={14}/> Pending</span>}
                       </td>
-
                       <td className="px-6 py-4 align-middle text-right">
-                         <button 
-                           onClick={() => setActiveMenu(lead.id)}
-                           disabled={nurturingId === lead.id}
-                           className="p-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-lg transition-all active:scale-95 disabled:opacity-50"
-                         >
-                           {nurturingId === lead.id ? <Loader2 size={16} className="animate-spin" /> : <Bot size={16} />}
-                         </button>
+                        <div className="relative inline-block text-left">
+                          <button onClick={() => setActiveMenu(activeMenu === lead.id ? null : lead.id)} className="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors border border-slate-700">
+                            <Bot size={16} />
+                          </button>
+                          {activeMenu === lead.id && (
+                            <>
+                              <div className="fixed inset-0 z-40" onClick={() => setActiveMenu(null)}></div>
+                              <div className="absolute right-0 mt-2 w-48 origin-top-right rounded-xl bg-slate-800 border border-slate-700 shadow-2xl z-50 overflow-hidden">
+                                 <div className="px-3 py-2 bg-slate-900 border-b border-slate-700"><p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">Trigger Action</p></div>
+                                 <div className="py-1">
+                                    <button onClick={() => handleGenerateDraft(lead, 'email')} className="w-full text-left px-4 py-2.5 text-sm font-medium text-slate-300 hover:bg-blue-600 hover:text-white flex items-center gap-3 transition-colors"><Mail size={14}/> Draft Email</button>
+                                    <button onClick={() => handleGenerateDraft(lead, 'whatsapp')} className="w-full text-left px-4 py-2.5 text-sm font-medium text-slate-300 hover:bg-emerald-600 hover:text-white flex items-center gap-3 transition-colors"><MessageSquare size={14}/> Draft WhatsApp</button>
+                                    <button onClick={() => handleGenerateDraft(lead, 'call')} className="w-full text-left px-4 py-2.5 text-sm font-medium text-slate-300 hover:bg-indigo-600 hover:text-white flex items-center gap-3 transition-colors border-t border-slate-700"><Phone size={14}/> AI Call Script</button>
+                                 </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -278,37 +248,53 @@ export default function Dashboard360() {
         </div>
       </div>
 
-      {activeMenu && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-           <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-200">
+      {draftModal.isOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+           <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
               
-              <div className="bg-slate-800 p-4 border-b border-slate-700 flex justify-between items-center">
-                 <div className="flex items-center gap-2">
-                    <Bot className="text-blue-400 w-5 h-5"/>
-                    <h3 className="font-bold text-white text-sm">Gemini AI Actions</h3>
+              <div className="bg-slate-800 p-5 border-b border-slate-700 flex justify-between items-center shrink-0">
+                 <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-lg ${draftModal.type==='email'?'bg-blue-500/20 text-blue-400':draftModal.type==='whatsapp'?'bg-emerald-500/20 text-emerald-400':'bg-indigo-500/20 text-indigo-400'}`}>
+                      {draftModal.type === 'email' ? <Mail size={18}/> : draftModal.type === 'whatsapp' ? <MessageSquare size={18}/> : <Phone size={18}/>}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-white text-base">Review & Edit {draftModal.type.toUpperCase()}</h3>
+                      <p className="text-xs text-slate-400">To: {draftModal.lead?.fullName} ({draftModal.lead?.phone})</p>
+                    </div>
                  </div>
-                 <button onClick={() => setActiveMenu(null)} className="text-slate-400 hover:text-white transition-colors">
-                    <X size={18} />
-                 </button>
+                 <button onClick={() => setDraftModal({isOpen: false, type: '', lead: null})} className="text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 p-2 rounded-lg transition-colors"><X size={18} /></button>
               </div>
 
-              <div className="p-4 space-y-2">
-                 <p className="text-xs text-slate-400 mb-4 px-1">
-                   Select an autonomous action for this lead. AI will read their score and status to generate a personalized response.
-                 </p>
-                 <button onClick={() => triggerManee(activeMenu, 'email')} className="w-full flex items-center justify-between p-3.5 bg-slate-800/50 hover:bg-blue-600 border border-slate-700 hover:border-blue-500 rounded-xl text-slate-300 hover:text-white transition-all group">
-                   <div className="flex items-center gap-3 font-bold text-sm"><Mail size={16} className="text-blue-400 group-hover:text-white"/> Auto Email</div>
-                 </button>
-                 <button onClick={() => triggerManee(activeMenu, 'whatsapp')} className="w-full flex items-center justify-between p-3.5 bg-slate-800/50 hover:bg-emerald-600 border border-slate-700 hover:border-emerald-500 rounded-xl text-slate-300 hover:text-white transition-all group">
-                   <div className="flex items-center gap-3 font-bold text-sm"><MessageSquare size={16} className="text-emerald-500 group-hover:text-white"/> AI WhatsApp</div>
-                 </button>
-                 <button onClick={() => triggerManee(activeMenu, 'call')} className="w-full flex items-center justify-between p-3.5 bg-slate-800/50 hover:bg-indigo-600 border border-slate-700 hover:border-indigo-500 rounded-xl text-slate-300 hover:text-white transition-all group">
-                   <div className="flex items-center gap-3 font-bold text-sm"><Phone size={16} className="text-indigo-400 group-hover:text-white"/> AI Voice Call Script</div>
+              <div className="p-5 flex-grow overflow-y-auto bg-slate-950">
+                 {isDrafting ? (
+                    <div className="flex flex-col items-center justify-center h-48 gap-4 text-blue-400">
+                      <Bot className="w-12 h-12 animate-pulse" />
+                      <p className="text-sm font-bold tracking-widest uppercase animate-pulse">Gemini 2.5 Flash Thinking...</p>
+                    </div>
+                 ) : (
+                    <textarea 
+                      className="w-full h-64 bg-slate-900 border border-slate-700 rounded-xl p-4 text-slate-300 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none leading-relaxed resize-none custom-scrollbar"
+                      value={draftContent}
+                      onChange={(e) => setDraftContent(e.target.value)}
+                    />
+                 )}
+              </div>
+
+              <div className="bg-slate-800 p-4 border-t border-slate-700 flex justify-end gap-3 shrink-0">
+                 <button onClick={() => setDraftModal({isOpen: false, type: '', lead: null})} className="px-5 py-2.5 text-sm font-bold text-slate-400 hover:text-white transition-colors">Cancel</button>
+                 <button 
+                   onClick={handlePublishDraft}
+                   disabled={isDrafting || isPublishing}
+                   className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition-all active:scale-95 disabled:opacity-50 ${draftModal.type==='email'?'bg-blue-600 hover:bg-blue-500':draftModal.type==='whatsapp'?'bg-emerald-600 hover:bg-emerald-500':'bg-indigo-600 hover:bg-indigo-500'}`}
+                 >
+                   {isPublishing ? <Loader2 size={16} className="animate-spin"/> : <Send size={16}/>}
+                   Publish & {draftModal.type === 'call' ? 'Play Call' : 'Send'}
                  </button>
               </div>
            </div>
         </div>
       )}
+
     </div>
   );
 }

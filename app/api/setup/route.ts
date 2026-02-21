@@ -11,7 +11,7 @@ export async function GET() {
       update: {},
       create: { 
         name: "SUPER_ADMIN",
-        permissions: "view_report,trigger_nurture,manage_roles,edit_settings" 
+        permissions: JSON.stringify(["view_report", "trigger_nurture", "manage_roles", "edit_settings"])
       }
     });
 
@@ -19,9 +19,19 @@ export async function GET() {
       where: { email: "mr.deepanshujoshi@gmail.com" },
     });
 
-    if (existingAdmin) return NextResponse.json({ message: "Super Admin already exists!" });
-
     const hashedPassword = await bcrypt.hash("1234567890", 10);
+
+    if (existingAdmin) {
+        await prisma.user.update({
+            where: { email: "mr.deepanshujoshi@gmail.com" },
+            data: {
+                password: hashedPassword,
+                roleId: superAdminRole.id
+            }
+        });
+        return NextResponse.json({ message: "Super Admin already existed, password updated successfully!" });
+    }
+
     const admin = await prisma.user.create({
       data: {
         name: "Deepanshu Joshi",
@@ -31,9 +41,9 @@ export async function GET() {
       }
     });
 
-    return NextResponse.json({ message: "Super Admin and Role created!", adminId: admin.id });
+    return NextResponse.json({ message: "Super Admin and Role created successfully!", adminId: admin.id });
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Setup failed" }, { status: 500 });
+    console.error("SETUP ERROR:", error);
+    return NextResponse.json({ error: "Setup failed", details: String(error) }, { status: 500 });
   }
 }

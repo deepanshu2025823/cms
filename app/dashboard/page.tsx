@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { 
   Loader2, Mail, Phone, MessageSquare, CheckCircle2, 
@@ -40,6 +40,10 @@ export default function Dashboard360() {
   const [searchTerm, setSearchTerm] = useState('');
   const [clearing, setClearing] = useState(false);
 
+  // 🚀 NEW: Tracker for Auto-Calling
+  const prevAttendeesCount = useRef<number | null>(null);
+  const autoCallTriggered = useRef<Set<string>>(new Set());
+
   const fetchAttendees = async () => {
     try {
       const res = await fetch('/api/attendees', { cache: 'no-store' });
@@ -54,6 +58,48 @@ export default function Dashboard360() {
     const interval = setInterval(fetchAttendees, 10000); 
     return () => clearInterval(interval);
   }, []);
+
+  // 🚀 NEW: AUTONOMOUS 2-SECOND CALL TRIGGER LOGIC
+  useEffect(() => {
+    if (prevAttendeesCount.current !== null && attendees.length > prevAttendeesCount.current) {
+      // Find the new attendees (assuming the newest is at index 0 based on descending order)
+      const newLead = attendees[0]; 
+      
+      // Ensure we don't call the same person twice automatically
+      if (newLead && !autoCallTriggered.current.has(newLead.id)) {
+        autoCallTriggered.current.add(newLead.id);
+        
+        console.log(`New lead detected: ${newLead.fullName}. Initiating autonomous call in 2 seconds...`);
+        
+        setTimeout(() => {
+          executeAutonomousCall(newLead);
+        }, 2000); // Exactly 2 seconds delay
+      }
+    }
+    prevAttendeesCount.current = attendees.length;
+  }, [attendees]);
+
+  // The Autonomous Call Simulation
+  const executeAutonomousCall = (lead: Attendee) => {
+    let script = "";
+    
+    if (lead.status.toLowerCase() === 'passed') {
+        script = `Hi ${lead.fullName}, this is Manee from Career Lab Consulting. I am so thrilled to tell you that you've scored ${lead.score} percent and unlocked a ${lead.discountPercent} percent scholarship! This is fantastic news. If you have any complex questions about your enrollment, I am transferring this call to our senior sales team at +91 8700827753 right now. Please hold on.`;
+    } else {
+        script = `Hi ${lead.fullName}, Manee here from Career Lab Consulting. I see your test attempt had some issues resulting in a ${lead.score} score. Don't worry, we are here to support you. Let me quickly connect you in a conference call with our academic team at +91 8700827753 so they can guide you further. Transferring now.`;
+    }
+
+    // Play the voice locally as a simulation
+    playIndianFemaleVoice(script);
+    
+    // Update DB to show call was made
+    fetch('/api/nurture', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: lead.id, type: 'call', action: 'send', content: script }),
+    }).then(() => fetchAttendees());
+  };
+
 
   const handleGenerateDraft = async (lead: Attendee, type: string) => {
     setActiveMenu(null);
@@ -114,6 +160,9 @@ export default function Dashboard360() {
 
   const playIndianFemaleVoice = (text: string) => {
     const synth = window.speechSynthesis;
+    // Cancel any ongoing speech so they don't overlap
+    synth.cancel(); 
+    
     const utterance = new SpeechSynthesisUtterance(text);
     
     const voices = synth.getVoices();
@@ -121,11 +170,11 @@ export default function Dashboard360() {
                         voices.find(v => v.lang === 'en-IN' || v.lang === 'hi-IN');
     
     if(indianVoice) utterance.voice = indianVoice;
-    utterance.pitch = 1.1; 
-    utterance.rate = 0.9;  
+    utterance.pitch = 1.2; 
+    utterance.rate = 0.95;  
     
     synth.speak(utterance);
-    alert("Live AI Voice Call Simulation Started! (Make sure your volume is up)");
+    alert(`📞 AI Call Triggered for ${text.substring(0, 15)}... \nManee is speaking, and ready to conference +91 8700827753 if needed!`);
   };
 
   const handleClearData = async () => {
@@ -133,7 +182,11 @@ export default function Dashboard360() {
     setClearing(true);
     try {
       const res = await fetch('/api/clear-data', { method: 'DELETE' });
-      if(res.ok) { setAttendees([]); alert("Database Truncated!"); }
+      if(res.ok) { 
+          setAttendees([]); 
+          prevAttendeesCount.current = 0; // Reset counter
+          alert("Database Truncated!"); 
+      }
     } catch (err) {} finally { setClearing(false); }
   };
 

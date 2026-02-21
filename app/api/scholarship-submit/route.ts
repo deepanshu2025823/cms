@@ -18,33 +18,47 @@ export async function OPTIONS() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { status, name, email, phone, score, totalQuestions, scholarshipCode, discount, planName, cheatWarnings } = body;
+    
+    const status = String(body.status || 'pending');
+    const name = String(body.name || 'Unknown Student');
+    const email = String(body.email || '');
+    const phone = String(body.phone || 'N/A');
+    const score = Number(body.score || 0);
+    const totalQuestions = Number(body.totalQuestions || 25);
+    const scholarshipCode = String(body.scholarshipCode || '');
+    const discount = Number(body.discount || 0);
+    const planName = String(body.planName || 'Unknown Plan');
+    const cheatWarnings = Number(body.cheatWarnings || 0);
+
+    if (!email) {
+       return NextResponse.json({ error: 'Email is required' }, { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
+    }
 
     await prisma.attendee.upsert({
-      where: { email },
+      where: { email: email },
       update: {
-        status,
-        score: score || 0,
-        discountPercent: discount || 0,
-        cheatWarnings: cheatWarnings || 0,
+        status: status,
+        score: score,
+        discountPercent: discount,
+        cheatWarnings: cheatWarnings,
       },
       create: {
         fullName: name,
-        email,
-        phone,
-        status,
-        planName,
-        score: score || 0,
-        discountPercent: discount || 0,
-        cheatWarnings: cheatWarnings || 0,
+        email: email,
+        phone: phone,
+        status: status,
+        planName: planName,
+        score: score,
+        discountPercent: discount,
+        cheatWarnings: cheatWarnings,
         countryCode: '',
-        couponCode: scholarshipCode || '',
+        couponCode: scholarshipCode,
       }
     });
 
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT),
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: Number(process.env.SMTP_PORT || 465),
       secure: true,
       auth: {
         user: process.env.SMTP_USER,
@@ -53,7 +67,6 @@ export async function POST(req: Request) {
     });
 
     if (status === 'disqualified') {
-        
         await transporter.sendMail({
             from: `"InternX Security" <${process.env.SMTP_USER}>`,
             to: email,
@@ -200,9 +213,14 @@ export async function POST(req: Request) {
       { headers: { 'Access-Control-Allow-Origin': '*' } }
     );
   } catch (error) {
-    console.error('Email/DB Saving Error:', error);
+    let errorMessage = 'An unknown error occurred';
+    if (error instanceof Error) {
+        errorMessage = error.message;
+    }
+    console.error('Email/DB Saving Error:', errorMessage);
+    
     return NextResponse.json(
-      { error: 'Failed to process request' }, 
+      { error: 'Failed to process request', details: errorMessage }, 
       { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } }
     );
   }

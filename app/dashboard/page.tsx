@@ -7,9 +7,7 @@ import { useSession } from 'next-auth/react';
 import { 
   Loader2, Mail, Phone, MessageSquare, CheckCircle2, 
   XCircle, Search, Bot, Filter, Zap, Users, Activity as ActivityIcon, 
-  ShieldCheck,
-  AlertTriangle,
-  Ban
+  ShieldCheck, AlertTriangle, Ban
 } from 'lucide-react';
 
 interface Attendee {
@@ -38,7 +36,13 @@ export default function Dashboard360() {
 
   const fetchAttendees = async () => {
     try {
-      const res = await fetch('/api/attendees');
+      const res = await fetch('/api/attendees', {
+        cache: 'no-store', 
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+        }
+      });
       const data = await res.json();
       setAttendees(data);
     } catch (err) {
@@ -50,6 +54,8 @@ export default function Dashboard360() {
 
   useEffect(() => {
     fetchAttendees();
+    const interval = setInterval(fetchAttendees, 10000); 
+    return () => clearInterval(interval);
   }, []);
 
   const triggerManee = async (id: string, type: 'email' | 'whatsapp' | 'call') => {
@@ -83,7 +89,6 @@ export default function Dashboard360() {
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-6">
-      {/* Top Stats Section */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-[#0b0f1f] p-6 rounded-2xl border border-white/10 flex items-center gap-4 shadow-xl">
            <div className="p-3 bg-blue-500/10 rounded-xl"><Users className="text-blue-500" /></div>
@@ -134,6 +139,11 @@ export default function Dashboard360() {
             <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
             <p className="text-xs font-black uppercase text-slate-500 tracking-[0.2em]">Syncing 360° Data</p>
           </div>
+        ) : attendees.length === 0 ? (
+          <div className="h-96 flex flex-col items-center justify-center gap-2 text-slate-500">
+            <ActivityIcon size={40} className="opacity-20 mb-2"/>
+            <p>Waiting for live data...</p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[1000px]">
@@ -164,35 +174,35 @@ export default function Dashboard360() {
                       </div>
                     </td>
                     <td className="p-5">
-  <div className="space-y-2">
-    <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase border ${
-      lead.status === 'PASSED' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 
-      lead.status === 'disqualified' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
-      'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
-    }`}>
-      {lead.status}
-    </span>
-    <p className="text-xs font-bold text-white tracking-tight">
-      Score: <span className="text-blue-400">{lead.score}%</span> — {lead.discountPercent}% Off
-    </p>
-    
-    <div className="flex items-center gap-1.5 mt-2">
-      {lead.cheatWarnings === 0 ? (
-        <span className="text-[10px] font-bold text-green-500 flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded-sm w-fit">
-          <ShieldCheck size={12}/> Clean Test
-        </span>
-      ) : lead.cheatWarnings === 1 ? (
-        <span className="text-[10px] font-bold text-yellow-500 flex items-center gap-1 bg-yellow-500/10 px-2 py-0.5 rounded-sm w-fit">
-          <AlertTriangle size={12}/> 1 Warning
-        </span>
-      ) : (
-        <span className="text-[10px] font-bold text-red-500 flex items-center gap-1 bg-red-500/10 px-2 py-0.5 rounded-sm w-fit animate-pulse">
-          <Ban size={12}/> Disqualified
-        </span>
-      )}
-    </div>
-  </div>
-</td>
+                      <div className="space-y-2">
+                        <span className={`px-2.5 py-1 rounded-md text-[9px] font-black uppercase border ${
+                          lead.status === 'PASSED' || lead.status === 'passed' ? 'bg-green-500/10 text-green-400 border-green-500/20' : 
+                          lead.status === 'disqualified' ? 'bg-red-500/10 text-red-500 border-red-500/20' :
+                          'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                        }`}>
+                          {lead.status}
+                        </span>
+                        <p className="text-xs font-bold text-white tracking-tight">
+                          Score: <span className="text-blue-400">{lead.score}%</span> — {lead.discountPercent}% Off
+                        </p>
+                        
+                        <div className="flex items-center gap-1.5 mt-2">
+                          {lead.cheatWarnings === 0 ? (
+                            <span className="text-[10px] font-bold text-green-500 flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded-sm w-fit">
+                              <ShieldCheck size={12}/> Clean Test
+                            </span>
+                          ) : lead.cheatWarnings === 1 ? (
+                            <span className="text-[10px] font-bold text-yellow-500 flex items-center gap-1 bg-yellow-500/10 px-2 py-0.5 rounded-sm w-fit">
+                              <AlertTriangle size={12}/> 1 Warning
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-bold text-red-500 flex items-center gap-1 bg-red-500/10 px-2 py-0.5 rounded-sm w-fit animate-pulse">
+                              <Ban size={12}/> Disqualified
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
                     <td className="p-5 bg-blue-900/[0.03] border-x border-white/5">
                       <div className="flex justify-center items-center gap-4">
                         <div className="flex flex-col items-center gap-1" title="Emails Sent">

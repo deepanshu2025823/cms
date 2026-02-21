@@ -40,7 +40,7 @@ export default function Dashboard360() {
   const [searchTerm, setSearchTerm] = useState('');
   const [clearing, setClearing] = useState(false);
 
-  // Tracker for Auto-Calling
+  // 🚀 NEW: Tracker for Auto-Calling
   const prevAttendeesCount = useRef<number | null>(null);
   const autoCallTriggered = useRef<Set<string>>(new Set());
 
@@ -59,26 +59,28 @@ export default function Dashboard360() {
     return () => clearInterval(interval);
   }, []);
 
-  // 🚀 AUTONOMOUS 2-SECOND CALL TRIGGER LOGIC (IN-HOUSE)
+  // 🚀 NEW: AUTONOMOUS 2-SECOND CALL TRIGGER LOGIC
   useEffect(() => {
     if (prevAttendeesCount.current !== null && attendees.length > prevAttendeesCount.current) {
+      // Find the new attendees (assuming the newest is at index 0 based on descending order)
       const newLead = attendees[0]; 
       
+      // Ensure we don't call the same person twice automatically
       if (newLead && !autoCallTriggered.current.has(newLead.id)) {
         autoCallTriggered.current.add(newLead.id);
         
-        console.log(`[SYS] New lead detected: ${newLead.fullName}. Generating Web Call Link in 2s...`);
+        console.log(`New lead detected: ${newLead.fullName}. Initiating autonomous call in 2 seconds...`);
         
         setTimeout(() => {
-          executeInHouseAutonomousCall(newLead);
-        }, 2000); 
+          executeAutonomousCall(newLead);
+        }, 2000); // Exactly 2 seconds delay
       }
     }
     prevAttendeesCount.current = attendees.length;
   }, [attendees]);
 
-  // The In-House Autonomous Call Prep
-  const executeInHouseAutonomousCall = async (lead: Attendee) => {
+  // The Autonomous Call Simulation
+  const executeAutonomousCall = (lead: Attendee) => {
     let script = "";
     
     if (lead.status.toLowerCase() === 'passed') {
@@ -87,13 +89,10 @@ export default function Dashboard360() {
         script = `Hi ${lead.fullName}, Manee here from Career Lab Consulting. I see your test attempt had some issues resulting in a ${lead.score} score. Don't worry, we are here to support you. Let me quickly connect you in a conference call with our academic team at +91 8700827753 so they can guide you further. Transferring now.`;
     }
 
-    // 🚀 Instead of Twilio, we simulate the call locally or send a Web Call Link
-    console.log(`[IN-HOUSE AI] Preparing Web Call Link for ${lead.fullName}`);
-    
-    // Play the voice locally for Admin to hear the simulation
+    // Play the voice locally as a simulation
     playIndianFemaleVoice(script);
     
-    // Update DB to show call was prepared/triggered
+    // Update DB to show call was made
     fetch('/api/nurture', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -141,7 +140,6 @@ export default function Dashboard360() {
             window.open(waUrl, '_blank');
         } 
         else if (draftModal.type === 'call') {
-            // IN-HOUSE CALL SIMULATION
             playIndianFemaleVoice(draftContent);
         }
         else {
@@ -160,28 +158,23 @@ export default function Dashboard360() {
     }
   };
 
-  // 🚀 IN-HOUSE TTS: Indian Female Voice Engine
   const playIndianFemaleVoice = (text: string) => {
-    if (typeof window !== "undefined" && window.speechSynthesis) {
-        const synth = window.speechSynthesis;
-        synth.cancel(); // Clear any ongoing speech
-        
-        const utterance = new SpeechSynthesisUtterance(text);
-        
-        const voices = synth.getVoices();
-        // Look for Google's Indian English Voice or any female Indian voice
-        const indianVoice = voices.find(v => (v.lang === 'en-IN' || v.lang === 'hi-IN') && v.name.toLowerCase().includes('female')) || 
-                            voices.find(v => v.lang === 'en-IN' || v.lang === 'hi-IN');
-        
-        if(indianVoice) utterance.voice = indianVoice;
-        utterance.pitch = 1.1; // Slightly feminine pitch
-        utterance.rate = 0.95; // Natural conversational speed
-        
-        synth.speak(utterance);
-        alert(`🎙️ IN-HOUSE AI AGENT SPEAKING:\n\n${text}`);
-    } else {
-        alert("Web Speech API is not supported in this browser.");
-    }
+    const synth = window.speechSynthesis;
+    // Cancel any ongoing speech so they don't overlap
+    synth.cancel(); 
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    const voices = synth.getVoices();
+    const indianVoice = voices.find(v => (v.lang === 'en-IN' || v.lang === 'hi-IN') && v.name.toLowerCase().includes('female')) || 
+                        voices.find(v => v.lang === 'en-IN' || v.lang === 'hi-IN');
+    
+    if(indianVoice) utterance.voice = indianVoice;
+    utterance.pitch = 1.2; 
+    utterance.rate = 0.95;  
+    
+    synth.speak(utterance);
+    alert(`📞 AI Call Triggered for ${text.substring(0, 15)}... \nManee is speaking, and ready to conference +91 8700827753 if needed!`);
   };
 
   const handleClearData = async () => {
@@ -191,8 +184,7 @@ export default function Dashboard360() {
       const res = await fetch('/api/clear-data', { method: 'DELETE' });
       if(res.ok) { 
           setAttendees([]); 
-          prevAttendeesCount.current = 0; 
-          autoCallTriggered.current.clear();
+          prevAttendeesCount.current = 0; // Reset counter
           alert("Database Truncated!"); 
       }
     } catch (err) {} finally { setClearing(false); }
@@ -349,7 +341,7 @@ export default function Dashboard360() {
                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition-all active:scale-95 disabled:opacity-50 ${draftModal.type==='email'?'bg-blue-600 hover:bg-blue-500':draftModal.type==='whatsapp'?'bg-emerald-600 hover:bg-emerald-500':'bg-indigo-600 hover:bg-indigo-500'}`}
                  >
                    {isPublishing ? <Loader2 size={16} className="animate-spin"/> : <Send size={16}/>}
-                   Publish & {draftModal.type === 'call' ? 'Play Voice' : 'Send'}
+                   Publish & {draftModal.type === 'call' ? 'Play Call' : 'Send'}
                  </button>
               </div>
            </div>

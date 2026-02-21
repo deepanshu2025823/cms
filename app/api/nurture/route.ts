@@ -19,36 +19,20 @@ export async function POST(req: Request) {
       const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
       let prompt = "";
       
-      const isDisqualified = attendee.status.toLowerCase() === 'disqualified';
-      
       if (type === 'email') {
-        if (isDisqualified) {
-            prompt = `Act as a strict compliance officer for Career Lab Consulting. Write a short, formal email to ${attendee.fullName} stating they are disqualified from the ${attendee.planName} test due to cheating/tab-switching. Inform them their application is blocked. No subject line.`;
+        if (attendee.status.toLowerCase() === 'passed') {
+            prompt = `Act as an expert admission counselor at Career Lab Consulting. Write a highly enthusiastic email to ${attendee.fullName}. They just passed the ${attendee.planName} scholarship test with a ${attendee.score}% score and won a ${attendee.discountPercent}% discount. Ask them to use code ${attendee.couponCode} to claim it within 48 hours. Keep it professional. No subject line needed in response.`;
+        } else if (attendee.status.toLowerCase() === 'disqualified') {
+            prompt = `Act as a strict compliance officer for Career Lab Consulting. Write a short, formal email to ${attendee.fullName} stating they are disqualified from the ${attendee.planName} test due to cheating/tab-switching. Inform them their application is blocked. No subject line needed in response.`;
         } else {
-            prompt = `Act as an expert admission counselor at Career Lab Consulting. Write a highly enthusiastic email to ${attendee.fullName}. They passed the ${attendee.planName} test, scored ${attendee.score}%, and got a ${attendee.discountPercent}% discount. Urge them to claim code ${attendee.couponCode}. No subject line.`;
+            prompt = `Write a short, polite follow-up email to ${attendee.fullName} encouraging them to complete their registration for the ${attendee.planName} program. No subject line needed.`;
         }
       } 
       else if (type === 'whatsapp') {
-        if (isDisqualified) {
-            prompt = `Write a short, formal WhatsApp message for ${attendee.fullName} informing them that their ${attendee.planName} test was disqualified due to policy violations (tab-switching). Limit to 2 sentences.`;
-        } else {
-            prompt = `Write a short, friendly WhatsApp message for ${attendee.fullName} about passing their test (Score: ${attendee.score}%). Limit to 2 sentences with emojis.`;
-        }
+        prompt = `Write a short, friendly, and persuasive WhatsApp message for ${attendee.fullName} about their ${attendee.planName} test result (Score: ${attendee.score}%). Add a couple of appropriate emojis. Limit to 2 sentences.`;
       } 
       else if (type === 'call') {
-        if (isDisqualified) {
-            prompt = `You are 'Manee', an AI voice agent for Career Lab Consulting. Write an outbound call script to speak with ${attendee.fullName}. 
-            Rules: 
-            1. Be polite but firm in an Indian English conversational tone. 
-            2. Inform them their test was disqualified due to tab switching. 
-            3. At the end, add: "[System: If the user asks complex questions or AI gets confused, silently trigger conference call transfer to Sales Team at +91 8700827753]". Keep spoken part under 3 sentences.`;
-        } else {
-            prompt = `You are 'Manee', an AI voice agent for Career Lab Consulting. Write an outbound call script to speak with ${attendee.fullName}. 
-            Rules: 
-            1. Be highly positive, polite, and use an Indian English conversational tone. 
-            2. Tell them about their test score (${attendee.score}%) and discount (${attendee.discountPercent}%). 
-            3. At the end of the script, add a system instruction in brackets like this: "[System: If the user asks complex questions or AI gets confused, silently trigger conference call transfer to Sales Team at +91 8700827753]". Keep the spoken part under 3 sentences.`;
-        }
+        prompt = `Write a short, natural-sounding voice call script for an AI telecaller to read to ${attendee.fullName} regarding their ${attendee.planName} test (Score: ${attendee.score}%). It should sound exactly like a real human speaking in English.`;
       }
 
       const result = await model.generateContent(prompt);
@@ -68,7 +52,7 @@ export async function POST(req: Request) {
           from: `"Manee AI - Career Lab Consulting" <${process.env.SMTP_USER}>`,
           to: attendee.email,
           subject: `Update regarding your Scholarship Test - Career Lab Consulting`,
-          text: content,
+          text: content, 
         });
         await prisma.attendee.update({ where: { id }, data: { emailSent: { increment: 1 } } });
       } 

@@ -10,12 +10,12 @@ datasource db {
 }
 
 model User {
-  id       String @id @default(uuid())
-  name     String
-  email    String @unique
-  password String
-  roleId   String
-  role     Role   @relation(fields: [roleId], references: [id])
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  roleId    String
+  role      Role     @relation(fields: [roleId], references: [id])
   createdAt DateTime @default(now())
 }
 
@@ -40,12 +40,17 @@ model Attendee {
   fullName        String
   email           String   @unique
   phone           String
-  countryCode     String
+  
+  countryCode     String   @default("")
+  
   score           Int
   discountPercent Int
-  couponCode      String   @unique
+  
+  couponCode      String   @default("")
+  
   planName        String
-  status          TestStatus @default(PASSED)
+  
+  status          String   @default("pending")
   
   emailSent       Int      @default(1) 
   whatsappSent    Int      @default(0) 
@@ -56,10 +61,4 @@ model Attendee {
   
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-}
-
-enum TestStatus {
-  PASSED
-  FAILED
-  DISQUALIFIED
 }

@@ -19,6 +19,16 @@ model User {
   createdAt DateTime @default(now())
 }
 
+model SystemSetting {
+  id              String   @id @default("global") 
+  webhookUrl      String   @default("http://localhost:8080/api/make-call")
+  fallbackNumber  String   @default("+918700827753")
+  emailAlerts     Boolean  @default(true)
+  whatsappAlerts  Boolean  @default(false)
+  webhookLogs     Boolean  @default(true)
+  updatedAt       DateTime @updatedAt
+}
+
 model Notification {
   id        String   @id @default(uuid())
   title     String

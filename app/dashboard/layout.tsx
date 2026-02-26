@@ -61,7 +61,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <>
       <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${pathname === '/dashboard' ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20 shadow-[0_0_15px_rgba(37,99,235,0.1)]' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
         <LayoutDashboard className="w-5 h-5" />
-        <span className="font-bold text-sm tracking-wide">360° Report</span>
+        <span className="font-bold text-sm tracking-wide">Scholarship Test</span>
       </Link>
       <Link href="/dashboard/roles" onClick={() => setIsMobileMenuOpen(false)} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${pathname === '/dashboard/roles' ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20 shadow-[0_0_15px_rgba(37,99,235,0.1)]' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
         <Users className="w-5 h-5" />
@@ -98,7 +98,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Menu className="w-6 h-6" />
             </button>
             <h1 className="text-lg lg:text-xl font-black text-white uppercase tracking-wide hidden sm:block">
-              {pathname === '/dashboard' ? '360° Nurturing Dashboard' : 
+              {pathname === '/dashboard' ? 'Dashboard' : 
                pathname === '/dashboard/profile' ? 'My Profile' :
                pathname.replace('/dashboard/', '').toUpperCase()}
             </h1>

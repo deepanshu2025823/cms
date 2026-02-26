@@ -82,29 +82,25 @@ export default function Dashboard360() {
       
       if (newLead && !autoCallTriggered.current.has(newLead.id)) {
         autoCallTriggered.current.add(newLead.id);
-        setTimeout(() => executeInHouseAutonomousCall(newLead), 2000); 
+        
+        setTimeout(() => {
+          fetch('/api/nurture', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: newLead.id, type: 'call', action: 'auto_call' }),
+          }).then(() => fetchAttendees());
+        }, 2000); 
       }
     }
     prevAttendeesCount.current = attendees.length;
   }, [attendees]);
 
-  const executeInHouseAutonomousCall = async (lead: Attendee) => {
-    let script = lead.status.toLowerCase() === 'passed' 
-      ? `Hi ${lead.fullName}, this is Manee. You scored ${lead.score} percent! Connecting to sales now.`
-      : `Hi ${lead.fullName}, Manee here. Let's connect you to support regarding your test attempt.`;
-    
-    fetch('/api/nurture', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: lead.id, type: 'call', action: 'send', content: script }),
-    }).then(() => fetchAttendees());
-  };
 
   const handleGenerateDraft = async (lead: Attendee, type: string) => {
     setActiveMenu(null);
     setIsDrafting(true);
     setDraftModal({ isOpen: true, type, lead });
-    setDraftContent("Generating AI script...");
+    setDraftContent("Manee 2.5 Flash is writing the script...");
 
     try {
       const res = await fetch('/api/nurture', {
@@ -114,7 +110,7 @@ export default function Dashboard360() {
       });
       const data = await res.json();
       if (res.ok) setDraftContent(data.draft);
-      else setDraftContent("Error generating draft.");
+      else setDraftContent("Error generating draft. Please try again.");
     } catch (err) { setDraftContent("Network Error."); } 
     finally { setIsDrafting(false); }
   };
@@ -135,15 +131,11 @@ export default function Dashboard360() {
             const waUrl = `https://wa.me/${draftModal.lead.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(draftContent)}`;
             window.open(waUrl, '_blank');
         } 
-        else if (draftModal.type === 'call') {
-            alert("Call Initiated in Backend");
-        }
-        else { alert("Email Published and Sent Successfully!"); }
         
         await fetchAttendees(); 
         setDraftModal({isOpen: false, type: '', lead: null});
-      } else { alert("Failed to publish."); }
-    } catch (err) { alert("System Error"); } 
+      }
+    } catch (err) { console.error("System Error"); } 
     finally { setIsPublishing(false); }
   };
 
@@ -218,11 +210,7 @@ export default function Dashboard360() {
                       <td className="px-6 py-4 align-middle">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-blue-400 font-bold text-sm shrink-0 border border-slate-700">{lead.fullName.charAt(0)}</div>
-                          <div className="flex flex-col max-w-[200px]">
-                            <p className="font-semibold text-white text-sm truncate">{lead.fullName}</p>
-                            <p className="text-[11px] text-slate-400 truncate">{lead.email}</p>
-                            <p className="text-[10px] text-blue-400 font-mono mt-0.5">{lead.phone}</p>
-                          </div>
+                          <div className="flex flex-col max-w-[200px]"><p className="font-semibold text-white text-sm truncate">{lead.fullName}</p><p className="text-[11px] text-slate-400 truncate">{lead.email}</p><p className="text-[10px] text-blue-400 font-mono mt-0.5">{lead.phone}</p></div>
                         </div>
                       </td>
                       <td className="px-6 py-4 align-middle">
@@ -302,7 +290,7 @@ export default function Dashboard360() {
                  {isDrafting ? (
                     <div className="flex flex-col items-center justify-center h-48 gap-4 text-blue-400">
                       <Bot className="w-12 h-12 animate-pulse" />
-                      <p className="text-sm font-bold tracking-widest uppercase animate-pulse">Manee 2.5 Flash Thinking...</p>
+                      <p className="text-sm font-bold tracking-widest uppercase animate-pulse">Manee 2.5 Flash Generating...</p>
                     </div>
                  ) : (
                     <textarea 
@@ -321,7 +309,7 @@ export default function Dashboard360() {
                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition-all active:scale-95 disabled:opacity-50 ${draftModal.type==='email'?'bg-blue-600 hover:bg-blue-500':draftModal.type==='whatsapp'?'bg-emerald-600 hover:bg-emerald-500':'bg-indigo-600 hover:bg-indigo-500'}`}
                  >
                    {isPublishing ? <Loader2 size={16} className="animate-spin"/> : <Send size={16}/>}
-                   Publish & {draftModal.type === 'call' ? 'Trigger' : 'Send'}
+                   Publish & {draftModal.type === 'call' ? 'Send to Telephony Engine' : 'Send'}
                  </button>
               </div>
            </div>

@@ -102,7 +102,7 @@ export default function AptitudeDashboard() {
     setActiveMenu(null);
     setIsDrafting(true);
     setDraftModal({ isOpen: true, type, lead });
-    setDraftContent("Gemini 2.5 Flash is writing the script...");
+    setDraftContent("Manee 2.5 Flash is writing the script...");
 
     try {
       const res = await fetch('/api/nurture', {
@@ -308,7 +308,7 @@ export default function AptitudeDashboard() {
                  {isDrafting ? (
                     <div className="flex flex-col items-center justify-center h-48 gap-4 text-purple-400">
                       <Bot className="w-12 h-12 animate-pulse" />
-                      <p className="text-sm font-bold tracking-widest uppercase animate-pulse">Gemini 2.5 Flash Generating...</p>
+                      <p className="text-sm font-bold tracking-widest uppercase animate-pulse">Manee 2.5 Flash Generating...</p>
                     </div>
                  ) : (
                     <textarea 

@@ -29,6 +29,8 @@ export async function POST(req: Request) {
     const discount = Number(body.discount || 0);
     const planName = String(body.planName || 'Unknown Plan');
     const cheatWarnings = Number(body.cheatWarnings || 0);
+    
+    const testResponses = body.testResponses || null; 
 
     if (!email) {
        return NextResponse.json({ error: 'Email is required' }, { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
@@ -41,6 +43,7 @@ export async function POST(req: Request) {
         score: score,
         discountPercent: discount,
         cheatWarnings: cheatWarnings,
+        testResponses: testResponses, 
       },
       create: {
         fullName: name,
@@ -53,6 +56,7 @@ export async function POST(req: Request) {
         cheatWarnings: cheatWarnings,
         countryCode: '',
         couponCode: scholarshipCode,
+        testResponses: testResponses, 
       }
     });
 

@@ -59,6 +59,8 @@ model Attendee {
 
   cheatWarnings   Int      @default(0)
   
+  testResponses   Json?    
+  
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }

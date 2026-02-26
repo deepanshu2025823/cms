@@ -56,7 +56,7 @@ export async function POST(req: Request) {
 
       await createNotification(
         "Email Nurtured",
-        `Gemini AI sent a personalized email to ${attendee.fullName}.`,
+        `Manee AI sent a personalized email to ${attendee.fullName}.`,
         "success"
       );
     }
@@ -76,7 +76,7 @@ export async function POST(req: Request) {
 
       await createNotification(
         "WhatsApp Sync",
-        `Gemini generated a WA message for ${attendee.fullName}.`,
+        `Manee generated a WA message for ${attendee.fullName}.`,
         "info"
       );
     }
@@ -108,6 +108,6 @@ export async function POST(req: Request) {
 
   } catch (error) {
     console.error("Nurture Error:", error);
-    return NextResponse.json({ error: "Gemini AI could not complete the request." }, { status: 500 });
+    return NextResponse.json({ error: "Manee AI could not complete the request." }, { status: 500 });
   }
 }

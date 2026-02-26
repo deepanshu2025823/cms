@@ -2,13 +2,20 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { 
   Loader2, Mail, Phone, MessageSquare, CheckCircle2, 
   Search, Bot, Filter, Zap, Users, Activity as ActivityIcon, 
-  ShieldCheck, AlertTriangle, Ban, X, Trash2, Send
+  ShieldCheck, AlertTriangle, Ban, X, Trash2, Send, Eye, Check, XCircle
 } from 'lucide-react';
+
+interface TestResponse {
+  question: string;
+  userAnswer: string;
+  correctAnswer: string;
+  isCorrect: boolean;
+}
 
 interface Attendee {
   id: string;
@@ -24,6 +31,7 @@ interface Attendee {
   voiceCallCount: number;
   isRegistered: boolean;
   cheatWarnings: number;
+  testResponses?: TestResponse[] | null; // Added testResponses
 }
 
 export default function Dashboard360() {
@@ -32,13 +40,21 @@ export default function Dashboard360() {
   const [loading, setLoading] = useState(true);
   
   const [activeMenu, setActiveMenu] = useState<string | null>(null); 
+  
+  // Modals
   const [isDrafting, setIsDrafting] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [draftModal, setDraftModal] = useState<{isOpen: boolean, type: string, lead: Attendee | null}>({isOpen: false, type: '', lead: null});
   const [draftContent, setDraftContent] = useState('');
+  
+  // 🚀 NEW: Report Modal State
+  const [reportModal, setReportModal] = useState<{isOpen: boolean, lead: Attendee | null}>({isOpen: false, lead: null});
 
   const [searchTerm, setSearchTerm] = useState('');
   const [clearing, setClearing] = useState(false);
+
+  const prevAttendeesCount = useRef<number | null>(null);
+  const autoCallTriggered = useRef<Set<string>>(new Set());
 
   const fetchAttendees = async () => {
     try {
@@ -55,6 +71,30 @@ export default function Dashboard360() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (prevAttendeesCount.current !== null && attendees.length > prevAttendeesCount.current) {
+      const newLead = attendees[0]; 
+      
+      if (newLead && !autoCallTriggered.current.has(newLead.id)) {
+        autoCallTriggered.current.add(newLead.id);
+        setTimeout(() => executeInHouseAutonomousCall(newLead), 2000); 
+      }
+    }
+    prevAttendeesCount.current = attendees.length;
+  }, [attendees]);
+
+  const executeInHouseAutonomousCall = async (lead: Attendee) => {
+    let script = lead.status.toLowerCase() === 'passed' 
+      ? `Hi ${lead.fullName}, this is Manee. You scored ${lead.score} percent! Connecting to sales now.`
+      : `Hi ${lead.fullName}, Manee here. Let's connect you to support regarding your test attempt.`;
+    
+    fetch('/api/nurture', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: lead.id, type: 'call', action: 'send', content: script }),
+    }).then(() => fetchAttendees());
+  };
+
   const handleGenerateDraft = async (lead: Attendee, type: string) => {
     setActiveMenu(null);
     setIsDrafting(true);
@@ -70,11 +110,8 @@ export default function Dashboard360() {
       const data = await res.json();
       if (res.ok) setDraftContent(data.draft);
       else setDraftContent("Error generating draft.");
-    } catch (err) {
-      setDraftContent("Network Error.");
-    } finally {
-      setIsDrafting(false);
-    }
+    } catch (err) { setDraftContent("Network Error."); } 
+    finally { setIsDrafting(false); }
   };
 
   const handlePublishDraft = async () => {
@@ -94,38 +131,15 @@ export default function Dashboard360() {
             window.open(waUrl, '_blank');
         } 
         else if (draftModal.type === 'call') {
-            playIndianFemaleVoice(draftContent);
+            alert("Call Initiated in Backend");
         }
-        else {
-            alert("Email Published and Sent Successfully!");
-        }
+        else { alert("Email Published and Sent Successfully!"); }
         
         await fetchAttendees(); 
         setDraftModal({isOpen: false, type: '', lead: null});
-      } else {
-        alert("Failed to publish.");
-      }
-    } catch (err) {
-      alert("System Error");
-    } finally {
-      setIsPublishing(false);
-    }
-  };
-
-  const playIndianFemaleVoice = (text: string) => {
-    const synth = window.speechSynthesis;
-    const utterance = new SpeechSynthesisUtterance(text);
-    
-    const voices = synth.getVoices();
-    const indianVoice = voices.find(v => (v.lang === 'en-IN' || v.lang === 'hi-IN') && v.name.toLowerCase().includes('female')) || 
-                        voices.find(v => v.lang === 'en-IN' || v.lang === 'hi-IN');
-    
-    if(indianVoice) utterance.voice = indianVoice;
-    utterance.pitch = 1.1; 
-    utterance.rate = 0.9;  
-    
-    synth.speak(utterance);
-    alert("Live AI Voice Call Simulation Started! (Make sure your volume is up)");
+      } else { alert("Failed to publish."); }
+    } catch (err) { alert("System Error"); } 
+    finally { setIsPublishing(false); }
   };
 
   const handleClearData = async () => {
@@ -133,7 +147,11 @@ export default function Dashboard360() {
     setClearing(true);
     try {
       const res = await fetch('/api/clear-data', { method: 'DELETE' });
-      if(res.ok) { setAttendees([]); alert("Database Truncated!"); }
+      if(res.ok) { 
+          setAttendees([]); 
+          prevAttendeesCount.current = 0; 
+          autoCallTriggered.current.clear();
+      }
     } catch (err) {} finally { setClearing(false); }
   };
 
@@ -145,6 +163,7 @@ export default function Dashboard360() {
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 pb-12 font-sans relative">
       
+      {/* Top Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="bg-[#0f172a] p-5 rounded-2xl border border-slate-800 flex items-center gap-4 shadow-lg">
            <div className="p-3 bg-blue-500/10 rounded-xl"><Users className="text-blue-500 w-6 h-6" /></div>
@@ -160,6 +179,7 @@ export default function Dashboard360() {
         </div>
       </div>
 
+      {/* Main Table */}
       <div className="bg-[#0f172a] border border-slate-800 rounded-2xl shadow-xl flex flex-col overflow-hidden">
         <div className="p-4 sm:p-5 border-b border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-900/50">
           <div className="relative w-full md:w-96">
@@ -185,7 +205,7 @@ export default function Dashboard360() {
                     <th className="px-6 py-4">Attendee Identity</th>
                     <th className="px-6 py-4">Scholarship Status</th>
                     <th className="px-6 py-4 text-center">Nurture Cycle</th>
-                    <th className="px-6 py-4 text-center">Registration</th>
+                    <th className="px-6 py-4 text-center">Test Details</th>
                     <th className="px-6 py-4 text-right">Action</th>
                   </tr>
                 </thead>
@@ -195,7 +215,11 @@ export default function Dashboard360() {
                       <td className="px-6 py-4 align-middle">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-blue-400 font-bold text-sm shrink-0 border border-slate-700">{lead.fullName.charAt(0)}</div>
-                          <div className="flex flex-col max-w-[200px]"><p className="font-semibold text-white text-sm truncate">{lead.fullName}</p><p className="text-[11px] text-slate-400 truncate">{lead.email}</p><p className="text-[10px] text-blue-400 font-mono mt-0.5">{lead.phone}</p></div>
+                          <div className="flex flex-col max-w-[200px]">
+                            <p className="font-semibold text-white text-sm truncate">{lead.fullName}</p>
+                            <p className="text-[11px] text-slate-400 truncate">{lead.email}</p>
+                            <p className="text-[10px] text-blue-400 font-mono mt-0.5">{lead.phone}</p>
+                          </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 align-middle">
@@ -216,9 +240,17 @@ export default function Dashboard360() {
                           <div className="flex flex-col items-center gap-1"><Phone size={14} className="text-blue-500"/><span className="text-[11px] font-black text-blue-400">{lead.voiceCallCount}</span></div>
                         </div>
                       </td>
+                      
+                      {/* 🚀 NEW: View Report Button */}
                       <td className="px-6 py-4 align-middle text-center">
-                        {lead.isRegistered ? <span className="inline-flex items-center gap-1.5 text-emerald-400 text-xs font-medium"><CheckCircle2 size={14}/> Done</span> : <span className="inline-flex items-center gap-1.5 text-slate-400 text-xs font-medium"><ActivityIcon size={14}/> Pending</span>}
+                         <button 
+                            onClick={() => setReportModal({isOpen: true, lead: lead})}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-[10px] font-bold uppercase transition-colors border border-slate-700"
+                         >
+                            <Eye size={12}/> View MCQ Report
+                         </button>
                       </td>
+
                       <td className="px-6 py-4 align-middle text-right">
                         <div className="relative inline-block text-left">
                           <button onClick={() => setActiveMenu(activeMenu === lead.id ? null : lead.id)} className="p-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors border border-slate-700">
@@ -248,10 +280,10 @@ export default function Dashboard360() {
         </div>
       </div>
 
+      {/* DRAFT MODAL */}
       {draftModal.isOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
            <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
-              
               <div className="bg-slate-800 p-5 border-b border-slate-700 flex justify-between items-center shrink-0">
                  <div className="flex items-center gap-3">
                     <div className={`p-2 rounded-lg ${draftModal.type==='email'?'bg-blue-500/20 text-blue-400':draftModal.type==='whatsapp'?'bg-emerald-500/20 text-emerald-400':'bg-indigo-500/20 text-indigo-400'}`}>
@@ -269,7 +301,7 @@ export default function Dashboard360() {
                  {isDrafting ? (
                     <div className="flex flex-col items-center justify-center h-48 gap-4 text-blue-400">
                       <Bot className="w-12 h-12 animate-pulse" />
-                      <p className="text-sm font-bold tracking-widest uppercase animate-pulse">Gemini 2.5 Flash Thinking...</p>
+                      <p className="text-sm font-bold tracking-widest uppercase animate-pulse">Manee 2.5 Flash Thinking...</p>
                     </div>
                  ) : (
                     <textarea 
@@ -288,8 +320,62 @@ export default function Dashboard360() {
                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition-all active:scale-95 disabled:opacity-50 ${draftModal.type==='email'?'bg-blue-600 hover:bg-blue-500':draftModal.type==='whatsapp'?'bg-emerald-600 hover:bg-emerald-500':'bg-indigo-600 hover:bg-indigo-500'}`}
                  >
                    {isPublishing ? <Loader2 size={16} className="animate-spin"/> : <Send size={16}/>}
-                   Publish & {draftModal.type === 'call' ? 'Play Call' : 'Send'}
+                   Publish & {draftModal.type === 'call' ? 'Trigger' : 'Send'}
                  </button>
+              </div>
+           </div>
+        </div>
+      )}
+
+      {/* 🚀 NEW: MCQ DETAILED REPORT MODAL */}
+      {reportModal.isOpen && reportModal.lead && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+           <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+              
+              <div className="bg-slate-800 p-5 border-b border-slate-700 flex justify-between items-center shrink-0">
+                 <div>
+                    <h3 className="font-bold text-white text-lg">Detailed MCQ Report</h3>
+                    <p className="text-sm text-slate-400 mt-1">Student: <span className="text-white font-semibold">{reportModal.lead.fullName}</span></p>
+                 </div>
+                 <button onClick={() => setReportModal({isOpen: false, lead: null})} className="text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-700 p-2 rounded-lg transition-colors"><X size={20} /></button>
+              </div>
+
+              <div className="p-6 flex-grow overflow-y-auto bg-slate-950 custom-scrollbar">
+                 {reportModal.lead.testResponses ? (
+                    <div className="space-y-4">
+                       {(reportModal.lead.testResponses as TestResponse[]).map((resp, idx) => (
+                          <div key={idx} className={`p-4 rounded-xl border ${resp.isCorrect ? 'bg-emerald-900/10 border-emerald-500/20' : 'bg-rose-900/10 border-rose-500/20'}`}>
+                             <p className="text-white font-medium text-sm mb-3">
+                               <span className="text-slate-500 font-mono mr-2">Q{idx + 1}.</span> 
+                               {resp.question}
+                             </p>
+                             
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="bg-slate-900 p-3 rounded-lg border border-slate-800">
+                                   <p className="text-[10px] uppercase text-slate-500 font-bold mb-1">Student's Answer</p>
+                                   <div className={`flex items-start gap-2 text-sm ${resp.isCorrect ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                      {resp.isCorrect ? <Check size={16} className="mt-0.5 shrink-0"/> : <XCircle size={16} className="mt-0.5 shrink-0"/>}
+                                      <span>{resp.userAnswer}</span>
+                                   </div>
+                                </div>
+                                {!resp.isCorrect && (
+                                   <div className="bg-slate-900 p-3 rounded-lg border border-slate-800">
+                                      <p className="text-[10px] uppercase text-slate-500 font-bold mb-1">Correct Answer</p>
+                                      <div className="flex items-start gap-2 text-sm text-emerald-400">
+                                         <Check size={16} className="mt-0.5 shrink-0"/>
+                                         <span>{resp.correctAnswer}</span>
+                                      </div>
+                                   </div>
+                                )}
+                             </div>
+                          </div>
+                       ))}
+                    </div>
+                 ) : (
+                    <div className="flex flex-col items-center justify-center h-48 text-slate-500">
+                       <p>No detailed response data available for this older test.</p>
+                    </div>
+                 )}
               </div>
            </div>
         </div>

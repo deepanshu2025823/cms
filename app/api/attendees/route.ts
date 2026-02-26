@@ -12,6 +12,7 @@ export async function GET() {
     });
     return NextResponse.json(attendees);
   } catch (error) {
+    console.error("Failed to fetch attendees:", error);
     return NextResponse.json({ error: "Failed to fetch" }, { status: 500 });
   }
 }

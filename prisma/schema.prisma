@@ -64,6 +64,8 @@ model Attendee {
   couponCode      String   @default("")
   
   planName        String
+
+  testType        String   @default("scholarship")
   
   status          String   @default("pending")
   

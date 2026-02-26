@@ -9,7 +9,8 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { 
   LayoutDashboard, Users, LogOut, Settings, 
-  Menu, X, Bell, UserCircle, ChevronDown, CheckCircle2, AlertTriangle, Info 
+  Menu, X, Bell, UserCircle, ChevronDown, CheckCircle2, AlertTriangle, Info,
+  Briefcase 
 } from "lucide-react";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -41,12 +42,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
   const markAsRead = async (id: string) => {
     await fetch('/api/notifications', {
       method: 'PATCH',
@@ -63,10 +58,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <LayoutDashboard className="w-5 h-5" />
         <span className="font-bold text-sm tracking-wide">Scholarship Test</span>
       </Link>
+      
+      <Link href="/dashboard/aptitude" onClick={() => setIsMobileMenuOpen(false)} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${pathname === '/dashboard/aptitude' ? 'bg-purple-600/10 text-purple-400 border border-purple-500/20 shadow-[0_0_15px_rgba(147,51,234,0.1)]' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
+        <Briefcase className="w-5 h-5" />
+        <span className="font-bold text-sm tracking-wide">College Hiring</span>
+      </Link>
+
       <Link href="/dashboard/roles" onClick={() => setIsMobileMenuOpen(false)} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${pathname === '/dashboard/roles' ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20 shadow-[0_0_15px_rgba(37,99,235,0.1)]' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
         <Users className="w-5 h-5" />
         <span className="font-bold text-sm tracking-wide">Role Management</span>
       </Link>
+      
       <Link href="/dashboard/settings" onClick={() => setIsMobileMenuOpen(false)} className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${pathname === '/dashboard/settings' ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20 shadow-[0_0_15px_rgba(37,99,235,0.1)]' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}>
         <Settings className="w-5 h-5" />
         <span className="font-bold text-sm tracking-wide">Settings</span>
@@ -91,6 +93,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
       </aside>
 
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+           <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)}></div>
+           <aside className="w-64 bg-[#0b0f1f] border-r border-white/10 flex-col flex relative z-50 animate-in slide-in-from-left duration-300 h-full">
+             <div className="p-6 border-b border-white/10 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white p-1 rounded-lg shrink-0">
+                    <Image src="https://www.careerlabconsulting.com/favicon.ico" alt="Logo" width={24} height={24} />
+                  </div>
+                  <h2 className="font-black text-sm uppercase tracking-widest text-white">InternX</h2>
+                </div>
+                <button onClick={() => setIsMobileMenuOpen(false)} className="text-slate-400 hover:text-white"><X size={20}/></button>
+             </div>
+             <nav className="flex-1 p-4 space-y-2 mt-2">
+                <NavLinks />
+             </nav>
+           </aside>
+        </div>
+      )}
+
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <header className="h-20 bg-[#0b0f1f]/80 backdrop-blur-md border-b border-white/10 flex items-center justify-between px-4 lg:px-8 shrink-0 relative z-10">
           <div className="flex items-center gap-4">
@@ -98,7 +120,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Menu className="w-6 h-6" />
             </button>
             <h1 className="text-lg lg:text-xl font-black text-white uppercase tracking-wide hidden sm:block">
-              {pathname === '/dashboard' ? 'Dashboard' : 
+              {pathname === '/dashboard' ? 'Scholarship Dashboard' : 
+               pathname === '/dashboard/aptitude' ? 'Aptitude Test Hiring' :
                pathname === '/dashboard/profile' ? 'My Profile' :
                pathname.replace('/dashboard/', '').toUpperCase()}
             </h1>

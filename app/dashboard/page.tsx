@@ -31,7 +31,7 @@ interface Attendee {
   voiceCallCount: number;
   isRegistered: boolean;
   cheatWarnings: number;
-  testResponses?: TestResponse[] | null; // Added testResponses
+  testResponses?: TestResponse[] | null; 
 }
 
 export default function Dashboard360() {
@@ -41,13 +41,11 @@ export default function Dashboard360() {
   
   const [activeMenu, setActiveMenu] = useState<string | null>(null); 
   
-  // Modals
   const [isDrafting, setIsDrafting] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [draftModal, setDraftModal] = useState<{isOpen: boolean, type: string, lead: Attendee | null}>({isOpen: false, type: '', lead: null});
   const [draftContent, setDraftContent] = useState('');
   
-  // 🚀 NEW: Report Modal State
   const [reportModal, setReportModal] = useState<{isOpen: boolean, lead: Attendee | null}>({isOpen: false, lead: null});
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,8 +58,15 @@ export default function Dashboard360() {
     try {
       const res = await fetch('/api/attendees', { cache: 'no-store' });
       const data = await res.json();
-      setAttendees(data);
-    } catch (err) { console.error("Failed to fetch leads"); } 
+      
+      if (Array.isArray(data)) {
+        setAttendees(data);
+      } else {
+        console.error("API Error or DB Timeout:", data);
+      }
+    } catch (err) { 
+      console.error("Failed to fetch leads", err); 
+    } 
     finally { setLoading(false); }
   };
 
@@ -163,7 +168,6 @@ export default function Dashboard360() {
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6 pb-12 font-sans relative">
       
-      {/* Top Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="bg-[#0f172a] p-5 rounded-2xl border border-slate-800 flex items-center gap-4 shadow-lg">
            <div className="p-3 bg-blue-500/10 rounded-xl"><Users className="text-blue-500 w-6 h-6" /></div>
@@ -179,7 +183,6 @@ export default function Dashboard360() {
         </div>
       </div>
 
-      {/* Main Table */}
       <div className="bg-[#0f172a] border border-slate-800 rounded-2xl shadow-xl flex flex-col overflow-hidden">
         <div className="p-4 sm:p-5 border-b border-slate-800 flex flex-col md:flex-row justify-between items-center gap-4 bg-slate-900/50">
           <div className="relative w-full md:w-96">
@@ -241,7 +244,6 @@ export default function Dashboard360() {
                         </div>
                       </td>
                       
-                      {/* 🚀 NEW: View Report Button */}
                       <td className="px-6 py-4 align-middle text-center">
                          <button 
                             onClick={() => setReportModal({isOpen: true, lead: lead})}
@@ -280,7 +282,6 @@ export default function Dashboard360() {
         </div>
       </div>
 
-      {/* DRAFT MODAL */}
       {draftModal.isOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
            <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
@@ -327,7 +328,6 @@ export default function Dashboard360() {
         </div>
       )}
 
-      {/* 🚀 NEW: MCQ DETAILED REPORT MODAL */}
       {reportModal.isOpen && reportModal.lead && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
            <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">

@@ -30,6 +30,11 @@ export async function POST(req: Request) {
     const planName = String(body.planName || 'Unknown Plan');
     const cheatWarnings = Number(body.cheatWarnings || 0);
     
+    const qualification = String(body.qualification || 'N/A');
+    const collegeName = String(body.collegeName || 'N/A');
+    const city = String(body.city || 'N/A');
+    const state = String(body.state || 'N/A');
+    
     const testResponses = body.testResponses || null; 
 
     if (!email) {
@@ -44,6 +49,10 @@ export async function POST(req: Request) {
         discountPercent: discount,
         cheatWarnings: cheatWarnings,
         testResponses: testResponses, 
+        qualification: qualification,
+        collegeName: collegeName,
+        city: city,
+        state: state,
       },
       create: {
         fullName: name,
@@ -57,6 +66,10 @@ export async function POST(req: Request) {
         countryCode: '',
         couponCode: scholarshipCode,
         testResponses: testResponses, 
+        qualification: qualification,
+        collegeName: collegeName,
+        city: city,
+        state: state,
       }
     });
 
@@ -104,8 +117,14 @@ export async function POST(req: Request) {
             html: `
                 <h3 style="color: red;">User Disqualified</h3>
                 <p><strong>Name:</strong> ${name}</p>
-                <p><strong>Phone:</strong> ${phone}</p>
                 <p><strong>Email:</strong> ${email}</p>
+                <p><strong>Phone:</strong> ${phone}</p>
+                <p><strong>Plan:</strong> ${planName}</p>
+                <hr />
+                <h4>Additional Details:</h4>
+                <p><strong>Qualification:</strong> ${qualification}</p>
+                <p><strong>College:</strong> ${collegeName}</p>
+                <p><strong>Location:</strong> ${city}, ${state}</p>
                 <p><strong>Reason:</strong> Anti-Cheating Violation (Tab Switch)</p>
             `
         });
@@ -209,6 +228,11 @@ export async function POST(req: Request) {
         <p><strong>Discount:</strong> ${discount}% (${formatCurrency(scholarshipAmount)})</p>
         <p><strong>Code:</strong> ${scholarshipCode}</p>
         <p><strong>Final Fee:</strong> ${formatCurrency(finalFee)}</p>
+        <hr />
+        <h4>Additional Details:</h4>
+        <p><strong>Qualification:</strong> ${qualification}</p>
+        <p><strong>College:</strong> ${collegeName}</p>
+        <p><strong>Location:</strong> ${city}, ${state}</p>
       `,
     });
 

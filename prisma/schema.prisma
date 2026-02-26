@@ -50,6 +50,11 @@ model Attendee {
   fullName        String
   email           String   @unique
   phone           String
+
+  qualification   String   @default("")
+  collegeName     String   @default("")
+  city            String   @default("")
+  state           String   @default("")
   
   countryCode     String   @default("")
   

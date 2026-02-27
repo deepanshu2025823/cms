@@ -51,6 +51,13 @@ model Attendee {
   email           String   @unique
   phone           String
 
+  fatherName      String   @default("")
+  fatherOccupation String  @default("")
+  motherName      String   @default("")
+  motherOccupation String  @default("")
+  pincode         String   @default("")
+  address         String   @default("")
+
   qualification   String   @default("")
   collegeName     String   @default("")
   city            String   @default("")

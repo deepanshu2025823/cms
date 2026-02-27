@@ -35,6 +35,14 @@ export async function POST(req: Request) {
     const city = String(body.city || 'N/A');
     const state = String(body.state || 'N/A');
     
+    // CAPTURING THE 6 NEW FIELDS FROM REQUEST BODY
+    const fatherName = String(body.fatherName || 'N/A');
+    const fatherOccupation = String(body.fatherOccupation || 'N/A');
+    const motherName = String(body.motherName || 'N/A');
+    const motherOccupation = String(body.motherOccupation || 'N/A');
+    const pincode = String(body.pincode || 'N/A');
+    const address = String(body.address || 'N/A');
+
     const testType = String(body.testType || 'scholarship'); 
     const testResponses = body.testResponses || null; 
 
@@ -42,6 +50,7 @@ export async function POST(req: Request) {
        return NextResponse.json({ error: 'Email is required' }, { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } });
     }
 
+    // PRISMA UPSERT INCLUDING NEW FIELDS
     await prisma.attendee.upsert({
       where: { email: email },
       update: {
@@ -54,7 +63,13 @@ export async function POST(req: Request) {
         collegeName: collegeName,
         city: city,
         state: state,
-        testType: testType, 
+        testType: testType,
+        fatherName: fatherName,
+        fatherOccupation: fatherOccupation,
+        motherName: motherName,
+        motherOccupation: motherOccupation,
+        pincode: pincode,
+        address: address,
       },
       create: {
         fullName: name,
@@ -73,6 +88,12 @@ export async function POST(req: Request) {
         city: city,
         state: state,
         testType: testType, 
+        fatherName: fatherName,
+        fatherOccupation: fatherOccupation,
+        motherName: motherName,
+        motherOccupation: motherOccupation,
+        pincode: pincode,
+        address: address,
       }
     });
 
@@ -100,6 +121,7 @@ export async function POST(req: Request) {
 
     const clcLogoHtml = `<img src="https://careerlabconsulting.com/logo.png" alt="Career Lab Consulting" width="160" style="display: block; margin-bottom: 20px; border: none;">`;
 
+    // --- 1. DISQUALIFIED HANDLER ---
     if (status === 'disqualified') {
         await transporter.sendMail({
             from: `"HireX Security" <${process.env.SMTP_USER}>`,
@@ -127,8 +149,7 @@ export async function POST(req: Request) {
                             <p style="margin: 0; color: #9ca3af; font-size: 13px;">Regards,<br><strong style="color: #4b5563;">HireX Administrative Team</strong></p>
                         </div>
                     </div>
-                </div>
-            `
+                </div>`
         });
 
         await transporter.sendMail({
@@ -147,14 +168,14 @@ export async function POST(req: Request) {
                     <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0;"/>
                     <h4 style="margin: 0 0 10px 0; color: #333;">Profile Context:</h4>
                     <p style="margin: 4px 0; color: #555;"><strong>Edu:</strong> ${qualification} from ${collegeName}</p>
-                    <p style="margin: 4px 0; color: #555;"><strong>Loc:</strong> ${city}, ${state}</p>
-                </div>
-            `
+                    <p style="margin: 4px 0; color: #555;"><strong>Loc:</strong> ${address}, ${city}, ${state} - ${pincode}</p>
+                </div>`
         });
 
         return NextResponse.json({ success: true, message: 'Disqualification processed and saved' }, { headers: { 'Access-Control-Allow-Origin': '*' } });
     }
 
+    // --- 2. APTITUDE / HIRING HANDLER ---
     if (testType === 'aptitude') {
         await transporter.sendMail({
             from: `"HireX Hiring" <${process.env.SMTP_USER}>`,
@@ -183,8 +204,7 @@ export async function POST(req: Request) {
                     <p style="margin: 5px 0 0 0; font-weight: 700; color: #1f2937; font-size: 15px;">Recruitment Team, HireX</p>
                   </div>
                 </div>
-              </div>
-            `
+              </div>`
         });
 
         await transporter.sendMail({
@@ -197,8 +217,9 @@ export async function POST(req: Request) {
                     <table style="width: 100%; max-width: 600px; border-collapse: collapse; margin-top: 15px; font-size: 14px;">
                         <tr><td style="padding: 6px 0; color: #555; width: 140px;">Candidate Name:</td><td style="font-weight: bold; color: #111;">${name}</td></tr>
                         <tr><td style="padding: 6px 0; color: #555;">Email:</td><td style="font-weight: bold; color: #111;">${email}</td></tr>
-                        <tr><td style="padding: 6px 0; color: #555;">Phone / WA:</td><td style="font-weight: bold; color: #111;">${phone}</td></tr>
-                        <tr><td style="padding: 6px 0; color: #555;">Location:</td><td style="font-weight: bold; color: #111;">${city}, ${state}</td></tr>
+                        <tr><td style="padding: 6px 0; color: #555;">Father Info:</td><td>${fatherName} (${fatherOccupation})</td></tr>
+                        <tr><td style="padding: 6px 0; color: #555;">Mother Info:</td><td>${motherName} (${motherOccupation})</td></tr>
+                        <tr><td style="padding: 6px 0; color: #555;">Location:</td><td>${address}, ${city}, ${state} - ${pincode}</td></tr>
                     </table>
                     <h4 style="margin: 20px 0 10px 0; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Academic Context</h4>
                     <table style="width: 100%; max-width: 600px; border-collapse: collapse; font-size: 14px;">
@@ -210,13 +231,13 @@ export async function POST(req: Request) {
                         <tr><td style="padding: 6px 0; color: #555; width: 140px;">Test Type:</td><td style="font-weight: bold; color: #111;">Aptitude (All Hard)</td></tr>
                         <tr><td style="padding: 6px 0; color: #555;">Score:</td><td style="font-weight: bold; color: #2563eb; font-size: 18px;">${score}/${totalQuestions * 2}</td></tr>
                     </table>
-                </div>
-            `
+                </div>`
         });
 
         return NextResponse.json({ success: true, message: 'Aptitude saved and emails sent' }, { headers: { 'Access-Control-Allow-Origin': '*' } });
     }
 
+    // --- 3. SCHOLARSHIP HANDLER ---
     const mrpAmount = planName === 'Foundation' ? 120000 : 200000;
     const scholarshipAmount = Math.round((mrpAmount * discount) / 100);
     const finalFee = mrpAmount - scholarshipAmount;
@@ -234,7 +255,7 @@ export async function POST(req: Request) {
           </div>
           <div style="padding: 40px 35px;">
             <p style="font-size: 16px; line-height: 1.6; color: #4b5563; margin-top: 0;">
-                We have successfully reviewed your recent assessment. Based on your performance, academic background from <strong>${collegeName}</strong>, and aptitude, we are thrilled to offer you a scholarship for the InternX Program.
+                We have successfully reviewed your assessment. Based on your performance and background from <strong>${collegeName}</strong>, we are thrilled to offer you a scholarship.
             </p>
             <div style="display: flex; gap: 15px; margin: 30px 0;">
               <div style="flex: 1; background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; text-align: center;">
@@ -248,40 +269,20 @@ export async function POST(req: Request) {
             </div>
             <div style="background-color: #eff6ff; border: 1px dashed #93c5fd; border-radius: 12px; padding: 25px; text-align: center; margin-bottom: 30px;">
                 <p style="margin: 0 0 10px 0; color: #1e3a8a; font-size: 14px; font-weight: 600;">YOUR UNIQUE ENROLLMENT CODE</p>
-                <div style="font-size: 28px; font-weight: 900; color: #2563eb; letter-spacing: 2px; font-family: monospace;">
-                  ${scholarshipCode}
-                </div>
+                <div style="font-size: 28px; font-weight: 900; color: #2563eb; letter-spacing: 2px; font-family: monospace;">${scholarshipCode}</div>
             </div>
-            <h3 style="color: #111827; font-size: 18px; font-weight: 700; margin-bottom: 15px; border-bottom: 2px solid #f3f4f6; padding-bottom: 10px;">Revised Fee Structure</h3>
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
-              <tr>
-                <td style="padding: 12px 0; color: #6b7280; font-size: 15px;">Program Base Fee (MRP)</td>
-                <td style="padding: 12px 0; text-align: right; text-decoration: line-through; color: #9ca3af; font-size: 15px;">${formatCurrency(mrpAmount)}</td>
-              </tr>
-              <tr>
-                <td style="padding: 12px 0; color: #15803d; font-weight: 600; font-size: 15px;">Scholarship Applied</td>
-                <td style="padding: 12px 0; text-align: right; color: #15803d; font-weight: 600; font-size: 15px;">-${formatCurrency(scholarshipAmount)}</td>
-              </tr>
-              <tr>
-                <td style="padding: 20px 0 0 0; color: #111827; font-weight: 800; font-size: 18px; border-top: 1px dashed #e5e7eb;">Final Enrollment Fee</td>
-                <td style="padding: 20px 0 0 0; text-align: right; color: #2563eb; font-weight: 900; font-size: 26px; border-top: 1px dashed #e5e7eb;">${formatCurrency(finalFee)}</td>
-              </tr>
-            </table>
             <div style="margin-top: 40px; text-align: center;">
-              <a href="https://internx.ai/checkout/b2c?scholarshipCode=${scholarshipCode}&planName=${planName}" style="background-color: #2563eb; color: #ffffff; padding: 16px 36px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px; display: inline-block;">
-                Claim Scholarship & Enroll
-              </a>
+              <a href="https://internx.ai/checkout/b2c?scholarshipCode=${scholarshipCode}&planName=${planName}" style="background-color: #2563eb; color: #ffffff; padding: 16px 36px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px; display: inline-block;">Claim & Enroll Now</a>
             </div>
             <div style="margin-top: 40px; padding-top: 25px; border-top: 1px solid #f3f4f6;">
-              <p style="margin: 0; color: #6b7280; font-size: 14px;">Looking forward to welcoming you to the cohort.</p>
+              <p style="margin: 0; color: #6b7280; font-size: 14px;">Best regards,</p>
               <p style="margin: 5px 0 0 0; font-weight: 700; color: #1f2937; font-size: 15px;">Admissions Team, InternX AI</p>
             </div>
           </div>
           <div style="background-color: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0;">
             &copy; 2026 InternX by Career Lab Consulting. All rights reserved.
           </div>
-        </div>
-      `,
+        </div>`
     });
 
     await transporter.sendMail({
@@ -294,28 +295,15 @@ export async function POST(req: Request) {
             <h2 style="color: #2563eb; margin-top: 0;">New Scholarship Lead Captured</h2>
             <table style="width: 100%; max-width: 600px; border-collapse: collapse; margin-top: 15px; font-size: 14px;">
                 <tr><td style="padding: 6px 0; color: #555; width: 140px;">Candidate Name:</td><td style="font-weight: bold; color: #111;">${name}</td></tr>
-                <tr><td style="padding: 6px 0; color: #555;">Email:</td><td style="font-weight: bold; color: #111;">${email}</td></tr>
-                <tr><td style="padding: 6px 0; color: #555;">Phone / WA:</td><td style="font-weight: bold; color: #111;">${phone}</td></tr>
-                <tr><td style="padding: 6px 0; color: #555;">Location:</td><td style="font-weight: bold; color: #111;">${city}, ${state}</td></tr>
+                <tr><td style="padding: 6px 0; color: #555;">Parent Info:</td><td>${fatherName} (${fatherOccupation})</td></tr>
+                <tr><td style="padding: 6px 0; color: #555;">Contact:</td><td>${email} | ${phone}</td></tr>
+                <tr><td style="padding: 6px 0; color: #555;">Location:</td><td>${address}, ${city}, ${state} - ${pincode}</td></tr>
+                <tr><td style="padding: 6px 0; color: #555;">Discount Given:</td><td style="font-weight: bold; color: #16a34a;">${discount}%</td></tr>
             </table>
-            <h4 style="margin: 20px 0 10px 0; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Academic Context</h4>
-            <table style="width: 100%; max-width: 600px; border-collapse: collapse; font-size: 14px;">
-                <tr><td style="padding: 6px 0; color: #555; width: 140px;">Qualification:</td><td style="font-weight: bold; color: #111;">${qualification}</td></tr>
-                <tr><td style="padding: 6px 0; color: #555;">Institution:</td><td style="font-weight: bold; color: #111;">${collegeName}</td></tr>
-            </table>
-            <h4 style="margin: 20px 0 10px 0; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Test Results & Offer</h4>
-            <table style="width: 100%; max-width: 600px; border-collapse: collapse; font-size: 14px;">
-                <tr><td style="padding: 6px 0; color: #555; width: 140px;">Program:</td><td style="font-weight: bold; color: #111;">${planName}</td></tr>
-                <tr><td style="padding: 6px 0; color: #555;">Score:</td><td style="font-weight: bold; color: #111;">${score}/${totalQuestions * 2}</td></tr>
-                <tr><td style="padding: 6px 0; color: #555;">Discount Given:</td><td style="font-weight: bold; color: #16a34a;">${discount}% (${formatCurrency(scholarshipAmount)})</td></tr>
-                <tr><td style="padding: 6px 0; color: #555;">Coupon Code:</td><td style="font-weight: bold; color: #2563eb; font-family: monospace; font-size: 16px;">${scholarshipCode}</td></tr>
-                <tr><td style="padding: 6px 0; color: #555;">Final Fee:</td><td style="font-weight: bold; color: #111;">${formatCurrency(finalFee)}</td></tr>
-            </table>
-        </div>
-      `,
+        </div>`
     });
 
-    return NextResponse.json({ success: true, message: 'Data saved to DB and emails sent' }, { headers: { 'Access-Control-Allow-Origin': '*' } });
+    return NextResponse.json({ success: true, message: 'Data saved and emails sent' }, { headers: { 'Access-Control-Allow-Origin': '*' } });
 
   } catch (error) {
     let errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';

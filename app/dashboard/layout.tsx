@@ -69,7 +69,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${pathname === '/dashboard/aptitude' ? 'bg-purple-600/10 text-purple-400 border border-purple-500/20 shadow-[0_0_15px_rgba(147,51,234,0.1)]' : 'text-slate-400 hover:bg-white/5 hover:text-white'}`}
       >
         <Briefcase className="w-5 h-5" />
-        <span className="font-bold text-sm tracking-wide">College Hiring</span>
+        <span className="font-bold text-sm tracking-wide">Aptitude Test</span>
       </Link>
 
       <Link 

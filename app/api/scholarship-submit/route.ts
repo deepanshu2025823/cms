@@ -86,17 +86,32 @@ export async function POST(req: Request) {
       },
     });
 
+    const formatCurrency = (amount: number) => {
+        return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
+    };
+
+    const hireXLogoHtml = `
+        <div style="margin-bottom: 20px;">
+            <span style="font-family: 'Arial Black', sans-serif; font-size: 28px; font-style: italic; font-weight: 900; color: #1e293b; letter-spacing: -1px;">
+                Hire<span style="color: #2563eb;">X</span>
+            </span>
+            <div style="font-family: 'Courier New', monospace; font-size: 10px; font-weight: bold; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-top: -2px;">Your gateway to jobs and top talent</div>
+        </div>`;
+
+    const clcLogoHtml = `<img src="https://careerlabconsulting.com/logo.png" alt="Career Lab Consulting" width="160" style="display: block; margin-bottom: 20px; border: none;">`;
+
     if (status === 'disqualified') {
         await transporter.sendMail({
-            from: `"InternX Security" <${process.env.SMTP_USER}>`,
+            from: `"HireX Security" <${process.env.SMTP_USER}>`,
             to: email,
-            subject: `Action Required: Test Session Terminated - InternX`,
+            subject: `Action Required: Test Session Terminated - HireX`,
             html: `
                 <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #fee2e2; border-radius: 12px; overflow: hidden; background-color: #ffffff;">
                     <div style="background-color: #ef4444; padding: 25px; text-align: center;">
                         <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: 0.5px;">Session Terminated</h1>
                     </div>
                     <div style="padding: 35px 30px;">
+                        ${hireXLogoHtml}
                         <p style="font-size: 16px; color: #1f2937; margin-top: 0;">Dear <strong>${name}</strong>,</p>
                         <p style="color: #4b5563; line-height: 1.6;">
                             This is to inform you that your test session for the <strong>${planName}</strong> was automatically terminated by our automated proctoring system.
@@ -106,10 +121,10 @@ export async function POST(req: Request) {
                             <span style="color: #7f1d1d; font-size: 14px;">Multiple occurrences of tab switching or window focus loss were detected, violating our strict anti-cheating policy.</span>
                         </div>
                         <p style="color: #6b7280; font-size: 14px; line-height: 1.5;">
-                            InternX maintains a zero-tolerance policy to ensure a fair assessment environment for all applicants. A report has been logged with our administrative team.
+                            HireX maintains a zero-tolerance policy to ensure a fair assessment environment for all applicants. A report has been logged with our administrative team.
                         </p>
                         <div style="margin-top: 35px; border-top: 1px solid #f3f4f6; padding-top: 20px;">
-                            <p style="margin: 0; color: #9ca3af; font-size: 13px;">Regards,<br><strong style="color: #4b5563;">InternX Administrative Team</strong></p>
+                            <p style="margin: 0; color: #9ca3af; font-size: 13px;">Regards,<br><strong style="color: #4b5563;">HireX Administrative Team</strong></p>
                         </div>
                     </div>
                 </div>
@@ -117,7 +132,7 @@ export async function POST(req: Request) {
         });
 
         await transporter.sendMail({
-            from: `"InternX System" <${process.env.SMTP_USER}>`,
+            from: `"HireX System" <${process.env.SMTP_USER}>`,
             to: 'careerlabconsulting@gmail.com',
             subject: `🚩 SECURITY ALERT: Test Disqualified - ${name}`,
             html: `
@@ -137,38 +152,35 @@ export async function POST(req: Request) {
             `
         });
 
-        return NextResponse.json(
-          { success: true, message: 'Disqualification processed and saved to DB' },
-          { headers: { 'Access-Control-Allow-Origin': '*' } } 
-        );
+        return NextResponse.json({ success: true, message: 'Disqualification processed and saved' }, { headers: { 'Access-Control-Allow-Origin': '*' } });
     }
 
     if (testType === 'aptitude') {
         await transporter.sendMail({
-            from: `"InternX Hiring" <${process.env.SMTP_USER}>`,
+            from: `"HireX Hiring" <${process.env.SMTP_USER}>`,
             to: email, 
-            subject: `Assessment Completed: InternX College Hiring Program`,
+            subject: `Assessment Completed: HireX College Hiring Program`,
             html: `
               <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif; color: #1f2937; max-width: 650px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-                <div style="background: linear-gradient(135deg, #7e22ce 0%, #a855f7 100%); padding: 40px 30px; text-align: center;">
-                  <p style="color: #f3e8ff; margin: 0 0 10px 0; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">College Hiring Program</p>
-                  <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -0.5px;">Assessment Submitted</h1>
+                <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 40px 30px; text-align: left;">
+                  <span style="font-family: 'Arial Black', sans-serif; font-size: 32px; font-style: italic; font-weight: 900; color: #ffffff; letter-spacing: -1px;">Hire<span style="color: #60a5fa;">X</span></span>
+                  <h1 style="color: #ffffff; margin: 15px 0 0 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">Assessment Submitted</h1>
                 </div>
                 <div style="padding: 40px 35px;">
                   <p style="font-size: 16px; line-height: 1.6; color: #4b5563; margin-top: 0;">
                       Dear <strong>${name}</strong>,<br><br>
-                      Thank you for completing the InternX College Hiring Aptitude Test. We have successfully received your technical assessment responses.
+                      Thank you for completing the HireX College Hiring Aptitude Test. We have successfully received your technical assessment responses.
                   </p>
                   <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 25px; margin: 30px 0; text-align: center;">
                     <span style="font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Your Score</span><br/>
                     <span style="font-size: 36px; font-weight: 900; color: #0f172a; line-height: 1.2;">${score}<span style="font-size: 18px; color: #94a3b8; font-weight: 500;">/${totalQuestions * 2}</span></span>
                   </div>
                   <p style="color: #4b5563; font-size: 15px; line-height: 1.6;">
-                    Our recruitment team will now review your detailed technical report and academic background (${collegeName}). We will reach out to you shortly via phone or email regarding the next steps in the hiring process.
+                    Our recruitment team will now review your detailed technical report and academic background (${collegeName}). We will reach out to you shortly regarding the next steps in the hiring process.
                   </p>
                   <div style="margin-top: 40px; padding-top: 25px; border-top: 1px solid #f3f4f6;">
                     <p style="margin: 0; color: #6b7280; font-size: 14px;">Best regards,</p>
-                    <p style="margin: 5px 0 0 0; font-weight: 700; color: #1f2937; font-size: 15px;">Recruitment Team, InternX</p>
+                    <p style="margin: 5px 0 0 0; font-weight: 700; color: #1f2937; font-size: 15px;">Recruitment Team, HireX</p>
                   </div>
                 </div>
               </div>
@@ -176,12 +188,12 @@ export async function POST(req: Request) {
         });
 
         await transporter.sendMail({
-            from: `"InternX System" <${process.env.SMTP_USER}>`,
+            from: `"HireX System" <${process.env.SMTP_USER}>`,
             to: 'careerlabconsulting@gmail.com',
             subject: `🚀 HIRING LEAD: ${name} (Score: ${score}) - ${collegeName}`,
             html: `
-                <div style="font-family: Arial, sans-serif; padding: 20px; border-left: 5px solid #9333ea; background: #fafafa;">
-                    <h2 style="color: #9333ea; margin-top: 0;">New Aptitude Test Submitted</h2>
+                <div style="font-family: Arial, sans-serif; padding: 20px; border-left: 5px solid #2563eb; background: #fafafa;">
+                    <h2 style="color: #2563eb; margin-top: 0;">New Aptitude Test Submitted</h2>
                     <table style="width: 100%; max-width: 600px; border-collapse: collapse; margin-top: 15px; font-size: 14px;">
                         <tr><td style="padding: 6px 0; color: #555; width: 140px;">Candidate Name:</td><td style="font-weight: bold; color: #111;">${name}</td></tr>
                         <tr><td style="padding: 6px 0; color: #555;">Email:</td><td style="font-weight: bold; color: #111;">${email}</td></tr>
@@ -196,7 +208,7 @@ export async function POST(req: Request) {
                     <h4 style="margin: 20px 0 10px 0; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px;">Test Results</h4>
                     <table style="width: 100%; max-width: 600px; border-collapse: collapse; font-size: 14px;">
                         <tr><td style="padding: 6px 0; color: #555; width: 140px;">Test Type:</td><td style="font-weight: bold; color: #111;">Aptitude (All Hard)</td></tr>
-                        <tr><td style="padding: 6px 0; color: #555;">Score:</td><td style="font-weight: bold; color: #9333ea; font-size: 18px;">${score}/${totalQuestions * 2}</td></tr>
+                        <tr><td style="padding: 6px 0; color: #555;">Score:</td><td style="font-weight: bold; color: #2563eb; font-size: 18px;">${score}/${totalQuestions * 2}</td></tr>
                     </table>
                 </div>
             `
@@ -209,10 +221,6 @@ export async function POST(req: Request) {
     const scholarshipAmount = Math.round((mrpAmount * discount) / 100);
     const finalFee = mrpAmount - scholarshipAmount;
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
-    };
-
     await transporter.sendMail({
       from: `"InternX Admissions" <${process.env.SMTP_USER}>`,
       to: email, 
@@ -220,6 +228,7 @@ export async function POST(req: Request) {
       html: `
         <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif; color: #1f2937; max-width: 650px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
           <div style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%); padding: 40px 30px; text-align: center;">
+            <div style="margin-bottom: 20px;">${clcLogoHtml}</div>
             <p style="color: #bfdbfe; margin: 0 0 10px 0; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">InternX ${planName} Program</p>
             <h1 style="color: #ffffff; margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -0.5px;">Congratulations, ${name.split(' ')[0]}!</h1>
           </div>
@@ -258,9 +267,6 @@ export async function POST(req: Request) {
                 <td style="padding: 20px 0 0 0; text-align: right; color: #2563eb; font-weight: 900; font-size: 26px; border-top: 1px dashed #e5e7eb;">${formatCurrency(finalFee)}</td>
               </tr>
             </table>
-            <p style="color: #4b5563; font-size: 15px; line-height: 1.6;">
-              Please note that this offer is strictly valid for the next <strong>48 hours</strong>. Due to limited cohort sizes, we encourage you to secure your seat at the earliest.
-            </p>
             <div style="margin-top: 40px; text-align: center;">
               <a href="https://internx.ai/checkout/b2c?scholarshipCode=${scholarshipCode}&planName=${planName}" style="background-color: #2563eb; color: #ffffff; padding: 16px 36px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px; display: inline-block;">
                 Claim Scholarship & Enroll
@@ -305,27 +311,15 @@ export async function POST(req: Request) {
                 <tr><td style="padding: 6px 0; color: #555;">Coupon Code:</td><td style="font-weight: bold; color: #2563eb; font-family: monospace; font-size: 16px;">${scholarshipCode}</td></tr>
                 <tr><td style="padding: 6px 0; color: #555;">Final Fee:</td><td style="font-weight: bold; color: #111;">${formatCurrency(finalFee)}</td></tr>
             </table>
-            <p style="margin-top: 25px; font-size: 12px; color: #888;">
-                <em>Action: Review their MCQ details in the admin dashboard before placing a nurturing call.</em>
-            </p>
         </div>
       `,
     });
 
-    return NextResponse.json(
-      { success: true, message: 'Data saved to DB and emails sent' },
-      { headers: { 'Access-Control-Allow-Origin': '*' } }
-    );
+    return NextResponse.json({ success: true, message: 'Data saved to DB and emails sent' }, { headers: { 'Access-Control-Allow-Origin': '*' } });
+
   } catch (error) {
-    let errorMessage = 'An unknown error occurred';
-    if (error instanceof Error) {
-        errorMessage = error.message;
-    }
+    let errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error('Email/DB Saving Error:', errorMessage);
-    
-    return NextResponse.json(
-      { error: 'Failed to process request', details: errorMessage }, 
-      { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } }
-    );
+    return NextResponse.json({ error: 'Failed to process request', details: errorMessage }, { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } });
   }
 }

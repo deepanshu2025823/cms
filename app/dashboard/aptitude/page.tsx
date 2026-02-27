@@ -7,7 +7,8 @@ import { useSession } from 'next-auth/react';
 import { 
   Loader2, Mail, Phone, MessageSquare, CheckCircle2, 
   Search, Bot, Filter, Zap, Users, Activity as ActivityIcon, 
-  ShieldCheck, AlertTriangle, Ban, X, Trash2, Send, Eye, Check, XCircle, Briefcase
+  ShieldCheck, AlertTriangle, Ban, X, Trash2, Send, Eye, Check, XCircle, Briefcase,
+  Home, User as UserIcon, MapPin
 } from 'lucide-react';
 
 interface TestResponse {
@@ -35,6 +36,12 @@ interface Attendee {
   qualification: string;
   city: string;
   state: string;
+  fatherName: string;
+  fatherOccupation: string;
+  motherName: string;
+  motherOccupation: string;
+  pincode: string;
+  address: string;
   testResponses?: TestResponse[] | null; 
 }
 
@@ -102,7 +109,7 @@ export default function AptitudeDashboard() {
     setActiveMenu(null);
     setIsDrafting(true);
     setDraftModal({ isOpen: true, type, lead });
-    setDraftContent("Manee 2.5 Flash is writing the script...");
+    setDraftContent("HireX AI is writing the script...");
 
     try {
       const res = await fetch('/api/nurture', {
@@ -255,7 +262,7 @@ export default function AptitudeDashboard() {
                             onClick={() => setReportModal({isOpen: true, lead: lead})}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg text-[10px] font-bold uppercase transition-colors border border-slate-700"
                          >
-                            <Eye size={12}/> MCQ Report
+                            <Eye size={12}/> Profile & Report
                          </button>
                       </td>
 
@@ -308,7 +315,7 @@ export default function AptitudeDashboard() {
                  {isDrafting ? (
                     <div className="flex flex-col items-center justify-center h-48 gap-4 text-purple-400">
                       <Bot className="w-12 h-12 animate-pulse" />
-                      <p className="text-sm font-bold tracking-widest uppercase animate-pulse">Manee 2.5 Flash Generating...</p>
+                      <p className="text-sm font-bold tracking-widest uppercase animate-pulse">HireX AI Generating...</p>
                     </div>
                  ) : (
                     <textarea 
@@ -322,12 +329,12 @@ export default function AptitudeDashboard() {
               <div className="bg-slate-800 p-4 border-t border-slate-700 flex justify-end gap-3 shrink-0">
                  <button onClick={() => setDraftModal({isOpen: false, type: '', lead: null})} className="px-5 py-2.5 text-sm font-bold text-slate-400 hover:text-white transition-colors">Cancel</button>
                  <button 
-                   onClick={handlePublishDraft}
-                   disabled={isDrafting || isPublishing}
-                   className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition-all active:scale-95 disabled:opacity-50 ${draftModal.type==='email'?'bg-blue-600 hover:bg-blue-500':draftModal.type==='whatsapp'?'bg-emerald-600 hover:bg-emerald-500':'bg-purple-600 hover:bg-purple-500'}`}
+                    onClick={handlePublishDraft}
+                    disabled={isDrafting || isPublishing}
+                    className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold text-white shadow-lg transition-all active:scale-95 disabled:opacity-50 ${draftModal.type==='email'?'bg-blue-600 hover:bg-blue-500':draftModal.type==='whatsapp'?'bg-emerald-600 hover:bg-emerald-500':'bg-purple-600 hover:bg-purple-500'}`}
                  >
-                   {isPublishing ? <Loader2 size={16} className="animate-spin"/> : <Send size={16}/>}
-                   Publish & {draftModal.type === 'call' ? 'Send to Telephony Engine' : 'Send'}
+                    {isPublishing ? <Loader2 size={16} className="animate-spin"/> : <Send size={16}/>}
+                    Publish & {draftModal.type === 'call' ? 'Send to Engine' : 'Send'}
                  </button>
               </div>
            </div>
@@ -336,52 +343,107 @@ export default function AptitudeDashboard() {
 
       {reportModal.isOpen && reportModal.lead && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-           <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+           <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
               
               <div className="bg-slate-800 p-5 border-b border-slate-700 flex justify-between items-center shrink-0">
                  <div>
-                    <h3 className="font-bold text-white text-lg">Technical Assessment Report</h3>
-                    <p className="text-sm text-slate-400 mt-1">Candidate: <span className="text-white font-semibold">{reportModal.lead.fullName}</span> | Score: <span className="text-white font-bold">{reportModal.lead.score}/50</span></p>
+                    <h3 className="font-bold text-white text-lg">Candidate Comprehensive Report</h3>
+                    <p className="text-sm text-slate-400 mt-1">ID: <span className="font-mono text-[10px]">{reportModal.lead.id}</span></p>
                  </div>
                  <button onClick={() => setReportModal({isOpen: false, lead: null})} className="text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-700 p-2 rounded-lg transition-colors"><X size={20} /></button>
               </div>
 
-              <div className="p-6 flex-grow overflow-y-auto bg-slate-950 custom-scrollbar">
-                 {reportModal.lead.testResponses ? (
+              <div className="p-6 flex-grow overflow-y-auto bg-slate-950 custom-scrollbar space-y-8">
+                 
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="md:col-span-2 space-y-4">
+                        <div className="flex items-center gap-2 text-purple-400 font-bold text-xs uppercase tracking-widest"><UserIcon size={14}/> Personal & Family Background</div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-900/50 p-5 rounded-2xl border border-slate-800">
+                            <div>
+                                <p className="text-[10px] text-slate-500 uppercase font-bold">Father's Details</p>
+                                <p className="text-sm text-white font-semibold mt-1">{reportModal.lead.fatherName || 'Not Provided'}</p>
+                                <p className="text-xs text-slate-400 italic">{reportModal.lead.fatherOccupation || 'N/A'}</p>
+                            </div>
+                            <div>
+                                <p className="text-[10px] text-slate-500 uppercase font-bold">Mother's Details</p>
+                                <p className="text-sm text-white font-semibold mt-1">{reportModal.lead.motherName || 'Not Provided'}</p>
+                                <p className="text-xs text-slate-400 italic">{reportModal.lead.motherOccupation || 'N/A'}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div className="space-y-4">
-                       {(reportModal.lead.testResponses as TestResponse[]).map((resp, idx) => (
-                          <div key={idx} className={`p-4 rounded-xl border ${resp.isCorrect ? 'bg-emerald-900/10 border-emerald-500/20' : 'bg-rose-900/10 border-rose-500/20'}`}>
-                             <p className="text-white font-medium text-sm mb-3 flex items-start gap-2">
-                               <span className="text-slate-500 font-mono mt-0.5">Q{idx + 1}.</span> 
-                               <span className="leading-relaxed">{resp.question}</span>
-                             </p>
-                             
-                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="bg-slate-900 p-3 rounded-lg border border-slate-800">
-                                   <p className="text-[10px] uppercase text-slate-500 font-bold mb-1">Candidate's Answer</p>
-                                   <div className={`flex items-start gap-2 text-sm ${resp.isCorrect ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                      {resp.isCorrect ? <Check size={16} className="mt-0.5 shrink-0"/> : <XCircle size={16} className="mt-0.5 shrink-0"/>}
-                                      <span className="leading-tight">{resp.userAnswer}</span>
-                                   </div>
-                                </div>
-                                {!resp.isCorrect && (
-                                   <div className="bg-slate-900 p-3 rounded-lg border border-slate-800">
-                                      <p className="text-[10px] uppercase text-slate-500 font-bold mb-1">Correct Answer</p>
-                                      <div className="flex items-start gap-2 text-sm text-emerald-400">
-                                         <Check size={16} className="mt-0.5 shrink-0"/>
-                                         <span className="leading-tight">{resp.correctAnswer}</span>
-                                      </div>
-                                   </div>
-                                )}
-                             </div>
-                          </div>
-                       ))}
+                        <div className="flex items-center gap-2 text-blue-400 font-bold text-xs uppercase tracking-widest"><Home size={14}/> Address Details</div>
+                        <div className="bg-slate-900/50 p-5 rounded-2xl border border-slate-800 h-full">
+                            <p className="text-[10px] text-slate-500 uppercase font-bold">Residential Address</p>
+                            <p className="text-xs text-slate-300 leading-relaxed mt-2">{reportModal.lead.address || 'N/A'}</p>
+                            <div className="flex items-center gap-2 mt-3 text-white font-bold text-xs">
+                                <MapPin size={12} className="text-rose-500"/> {reportModal.lead.city}, {reportModal.lead.state} - {reportModal.lead.pincode}
+                            </div>
+                        </div>
                     </div>
-                 ) : (
-                    <div className="flex flex-col items-center justify-center h-48 text-slate-500">
-                       <p>No detailed response data available for this candidate.</p>
+                 </div>
+
+                 <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs uppercase tracking-widest"><ShieldCheck size={14}/> Academic & Assessment Status</div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                            <p className="text-[10px] text-slate-500 font-bold uppercase">Qualification</p>
+                            <p className="text-sm text-white font-black mt-1">{reportModal.lead.qualification}</p>
+                        </div>
+                        <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                            <p className="text-[10px] text-slate-500 font-bold uppercase">College</p>
+                            <p className="text-sm text-white font-black mt-1 truncate">{reportModal.lead.collegeName}</p>
+                        </div>
+                        <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                            <p className="text-[10px] text-slate-500 font-bold uppercase">Final Score</p>
+                            <p className="text-sm text-white font-black mt-1">{reportModal.lead.score}/50</p>
+                        </div>
+                        <div className="bg-slate-900 p-4 rounded-xl border border-slate-800">
+                            <p className="text-[10px] text-slate-500 font-bold uppercase">Security</p>
+                            <p className={`text-sm font-black mt-1 ${reportModal.lead.cheatWarnings > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>{reportModal.lead.cheatWarnings === 0 ? 'Verified Clean' : `${reportModal.lead.cheatWarnings} Violations`}</p>
+                        </div>
                     </div>
-                 )}
+                 </div>
+
+                 <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-slate-400 font-bold text-xs uppercase tracking-widest"><ActivityIcon size={14}/> Technical Assessment Responses</div>
+                    {reportModal.lead.testResponses ? (
+                        <div className="space-y-4">
+                           {(reportModal.lead.testResponses as TestResponse[]).map((resp, idx) => (
+                              <div key={idx} className={`p-4 rounded-xl border ${resp.isCorrect ? 'bg-emerald-900/10 border-emerald-500/20' : 'bg-rose-900/10 border-rose-500/20'}`}>
+                                 <p className="text-white font-medium text-sm mb-3 flex items-start gap-2">
+                                   <span className="text-slate-500 font-mono mt-0.5">Q{idx + 1}.</span> 
+                                   <span className="leading-relaxed">{resp.question}</span>
+                                 </p>
+                                 
+                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="bg-slate-900 p-3 rounded-lg border border-slate-800">
+                                       <p className="text-[10px] uppercase text-slate-500 font-bold mb-1">Candidate's Answer</p>
+                                       <div className={`flex items-start gap-2 text-sm ${resp.isCorrect ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                          {resp.isCorrect ? <Check size={16} className="mt-0.5 shrink-0"/> : <XCircle size={16} className="mt-0.5 shrink-0"/>}
+                                          <span className="leading-tight">{resp.userAnswer}</span>
+                                       </div>
+                                    </div>
+                                    {!resp.isCorrect && (
+                                       <div className="bg-slate-900 p-3 rounded-lg border border-slate-800">
+                                          <p className="text-[10px] uppercase text-slate-500 font-bold mb-1">Correct Answer</p>
+                                          <div className="flex items-start gap-2 text-sm text-emerald-400">
+                                             <Check size={16} className="mt-0.5 shrink-0"/>
+                                             <span className="leading-tight">{resp.correctAnswer}</span>
+                                          </div>
+                                       </div>
+                                    )}
+                                 </div>
+                              </div>
+                           ))}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-12 bg-slate-900/50 rounded-2xl border border-slate-800 text-slate-500 italic text-sm">
+                           <Bot size={32} className="mb-2 opacity-20"/> No response data generated for this session.
+                        </div>
+                    )}
+                 </div>
               </div>
            </div>
         </div>

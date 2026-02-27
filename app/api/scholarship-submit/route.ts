@@ -270,7 +270,7 @@ export async function POST(req: Request) {
                 <div style="font-size: 28px; font-weight: 900; color: #2563eb; letter-spacing: 2px; font-family: monospace;">${scholarshipCode}</div>
             </div>
             <div style="margin-top: 40px; text-align: center;">
-              <a href="https://careerlabconsulting.com/checkout/b2c?scholarshipCode=${scholarshipCode}&planName=${planName}" style="background-color: #2563eb; color: #ffffff; padding: 16px 36px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px; display: inline-block;">Claim & Enroll Now</a>
+              <a href="https://www.careerlabconsulting.com/checkout/b2c?scholarshipCode=${scholarshipCode}&planName=${planName}" style="background-color: #2563eb; color: #ffffff; padding: 16px 36px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px; display: inline-block;">Claim & Enroll Now</a>
             </div>
             <div style="margin-top: 40px; padding-top: 25px; border-top: 1px solid #f3f4f6;">
               <p style="margin: 0; color: #6b7280; font-size: 14px;">Best regards,</p>

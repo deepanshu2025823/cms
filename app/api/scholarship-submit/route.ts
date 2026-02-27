@@ -175,7 +175,6 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true, message: 'Disqualification processed and saved' }, { headers: { 'Access-Control-Allow-Origin': '*' } });
     }
 
-    // --- 2. APTITUDE / HIRING HANDLER ---
     if (testType === 'aptitude') {
         await transporter.sendMail({
             from: `"HireX Hiring" <${process.env.SMTP_USER}>`,
@@ -184,7 +183,7 @@ export async function POST(req: Request) {
             html: `
               <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, Arial, sans-serif; color: #1f2937; max-width: 650px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
                 <div style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 40px 30px; text-align: left;">
-                  <span style="font-family: 'Arial Black', sans-serif; font-size: 32px; font-style: italic; font-weight: 900; color: #ffffff; letter-spacing: -1px;">Hire<span style="color: #60a5fa;">X</span></span>
+                  <img src="https://careerlabconsulting.com/favicon.ico" width="120" height="40" alt="HireX"> <span style="font-family: 'Arial Black', sans-serif; font-size: 32px; font-style: italic; font-weight: 900; color: #ffffff; letter-spacing: -1px;">Hire<span style="color: #60a5fa;">X</span></span>
                   <h1 style="color: #ffffff; margin: 15px 0 0 0; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">Assessment Submitted</h1>
                 </div>
                 <div style="padding: 40px 35px;">
@@ -237,7 +236,6 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true, message: 'Aptitude saved and emails sent' }, { headers: { 'Access-Control-Allow-Origin': '*' } });
     }
 
-    // --- 3. SCHOLARSHIP HANDLER ---
     const mrpAmount = planName === 'Foundation' ? 120000 : 200000;
     const scholarshipAmount = Math.round((mrpAmount * discount) / 100);
     const finalFee = mrpAmount - scholarshipAmount;
@@ -272,7 +270,7 @@ export async function POST(req: Request) {
                 <div style="font-size: 28px; font-weight: 900; color: #2563eb; letter-spacing: 2px; font-family: monospace;">${scholarshipCode}</div>
             </div>
             <div style="margin-top: 40px; text-align: center;">
-              <a href="https://internx.ai/checkout/b2c?scholarshipCode=${scholarshipCode}&planName=${planName}" style="background-color: #2563eb; color: #ffffff; padding: 16px 36px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px; display: inline-block;">Claim & Enroll Now</a>
+              <a href="https://careerlabconsulting.com/checkout/b2c?scholarshipCode=${scholarshipCode}&planName=${planName}" style="background-color: #2563eb; color: #ffffff; padding: 16px 36px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 16px; display: inline-block;">Claim & Enroll Now</a>
             </div>
             <div style="margin-top: 40px; padding-top: 25px; border-top: 1px solid #f3f4f6;">
               <p style="margin: 0; color: #6b7280; font-size: 14px;">Best regards,</p>
